@@ -1,3 +1,6 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@apollo/server/express4';
@@ -42,6 +45,11 @@ app.use(
     },
   })
 );
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', service: 'identity-service' });
+});
 
 app.listen(PORT, () => {
   console.log(`🚀 Identity Service running on http://localhost:${PORT}/graphql`);

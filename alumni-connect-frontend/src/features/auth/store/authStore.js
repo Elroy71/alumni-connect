@@ -15,7 +15,7 @@ const useAuthStore = create(
 
       login: async (email, password) => {
         set({ isLoading: true, error: null });
-        
+
         try {
           const { data } = await apolloClient.mutate({
             mutation: LOGIN_MUTATION,
@@ -25,7 +25,10 @@ const useAuthStore = create(
           });
 
           const { user, token } = data.login;
-          
+
+          // Persist token to localStorage for Apollo Client
+          localStorage.setItem('token', token);
+
           const userData = {
             id: user.id,
             name: user.profile?.fullName || 'User',
@@ -38,7 +41,7 @@ const useAuthStore = create(
             graduationYear: user.profile?.graduationYear || null,
             avatar: user.profile?.avatar || null,
           };
-          
+
           set({
             user: userData,
             token: token,
@@ -46,7 +49,7 @@ const useAuthStore = create(
             isLoading: false,
             error: null,
           });
-          
+
           return { success: true, user: userData };
         } catch (error) {
           const errorMessage = error.message || 'Login failed';
@@ -60,7 +63,7 @@ const useAuthStore = create(
 
       register: async (userData) => {
         set({ isLoading: true, error: null });
-        
+
         try {
           const { data } = await apolloClient.mutate({
             mutation: REGISTER_MUTATION,
@@ -78,7 +81,10 @@ const useAuthStore = create(
           });
 
           const { user, token } = data.register;
-          
+
+          // Persist token to localStorage for Apollo Client
+          localStorage.setItem('token', token);
+
           const newUser = {
             id: user.id,
             name: user.profile?.fullName || 'User',
@@ -91,7 +97,7 @@ const useAuthStore = create(
             graduationYear: user.profile?.graduationYear || null,
             avatar: user.profile?.avatar || null,
           };
-          
+
           set({
             user: newUser,
             token: token,
@@ -99,7 +105,7 @@ const useAuthStore = create(
             isLoading: false,
             error: null,
           });
-          
+
           return { success: true, user: newUser };
         } catch (error) {
           const errorMessage = error.message || 'Registration failed';
@@ -122,7 +128,7 @@ const useAuthStore = create(
           });
 
           const user = data.me;
-          
+
           const userData = {
             id: user.id,
             name: user.profile?.fullName || 'User',
@@ -135,7 +141,7 @@ const useAuthStore = create(
             graduationYear: user.profile?.graduationYear || null,
             avatar: user.profile?.avatar || null,
           };
-          
+
           set({ user: userData });
           return userData;
         } catch (error) {
@@ -145,8 +151,10 @@ const useAuthStore = create(
       },
 
       logout: () => {
+        // Remove token from localStorage
+        localStorage.removeItem('token');
         apolloClient.clearStore();
-        
+
         set({
           user: null,
           token: null,

@@ -10,7 +10,7 @@ const resolvers = {
     // ==================== AUTH QUERIES ====================
     me: async (_, __, context) => {
       if (!context.user) throw new Error('Not authenticated');
-      
+
       const user = await prisma.user.findUnique({
         where: { id: context.user.userId },
         include: { profile: true }
@@ -34,12 +34,21 @@ const resolvers = {
     },
 
     post: async (_, { id }, context) => {
-      return await ForumService.getPostById(id, context.user);
+      const userId = context.user?.userId || null;
+      return await ForumService.getPostById(id, userId);
     },
 
     myPosts: async (_, __, context) => {
       if (!context.user) throw new Error('Not authenticated');
       return await ForumService.getMyPosts(context.user.userId);
+    },
+
+    comments: async (_, { postId, limit, offset }) => {
+      return await ForumService.getComments(postId, limit, offset);
+    },
+
+    categories: async () => {
+      return await ForumService.getCategories();
     },
 
     // ==================== JOB QUERIES ====================
@@ -102,7 +111,7 @@ const resolvers = {
     // ==================== AUTH MUTATIONS ====================
     register: async (_, { input }) => {
       console.log('📝 Register mutation called for:', input.email);
-      
+
       try {
         const result = await AuthService.register(input);
         console.log('✅ Registration successful:', result.user.email);
@@ -115,7 +124,7 @@ const resolvers = {
 
     login: async (_, { input }) => {
       console.log('🔐 Login mutation called for:', input.email);
-      
+
       try {
         const { email, password } = input;
         const result = await AuthService.login(email, password);
@@ -151,12 +160,17 @@ const resolvers = {
 
     toggleLikePost: async (_, { postId }, context) => {
       if (!context.user) throw new Error('Not authenticated');
-      return await ForumService.toggleLikePost(postId, context.user.userId);
+      return await ForumService.toggleLike(context.user.userId, postId, 'post');
     },
 
-    createComment: async (_, { postId, input }, context) => {
+    toggleLike: async (_, { targetId, type }, context) => {
       if (!context.user) throw new Error('Not authenticated');
-      return await ForumService.createComment(postId, context.user.userId, input);
+      return await ForumService.toggleLike(context.user.userId, targetId, type);
+    },
+
+    createComment: async (_, { postId, content, parentId }, context) => {
+      if (!context.user) throw new Error('Not authenticated');
+      return await ForumService.createComment(context.user.userId, postId, content, parentId);
     },
 
     updateComment: async (_, { id, input }, context) => {
@@ -234,49 +248,105 @@ const resolvers = {
 
   // Type Resolvers
   Post: {
-    author: async (parent) => {
+    user: async (parent) => {
+      if (parent.user) return parent.user;
       return await prisma.user.findUnique({
-        where: { id: parent.authorId },
+        where: { id: parent.userId },
         include: { profile: true }
       });
     },
     category: async (parent) => {
+      if (parent.category) return parent.category;
       if (!parent.categoryId) return null;
       return await prisma.category.findUnique({
         where: { id: parent.categoryId }
       });
     },
-    comments: async (parent) => {
-      return await prisma.comment.findMany({
-        where: { postId: parent.id, parentId: null },
-        orderBy: { createdAt: 'desc' }
+    tags: async (parent) => {
+      if (parent.tags) return parent.tags;
+      return await prisma.postTag.findMany({
+        where: { postId: parent.id },
+        include: { tag: true }
       });
     },
-    likes: async (parent) => {
-      return await prisma.postLike.findMany({
-        where: { postId: parent.id },
-        include: { user: { include: { profile: true } } }
+    commentsCount: async (parent) => {
+      if (parent._count?.comments !== undefined) return parent._count.comments;
+      return await prisma.comment.count({
+        where: { postId: parent.id }
       });
+    },
+    likesCount: async (parent) => {
+      if (parent._count?.likes !== undefined) return parent._count.likes;
+      return await prisma.like.count({
+        where: { postId: parent.id }
+      });
+    },
+    isLiked: (parent) => {
+      return parent.isLiked || false;
+    },
+    createdAt: (parent) => {
+      if (parent.createdAt instanceof Date) {
+        return parent.createdAt.toISOString();
+      }
+      return parent.createdAt || new Date().toISOString();
+    },
+    updatedAt: (parent) => {
+      if (parent.updatedAt instanceof Date) {
+        return parent.updatedAt.toISOString();
+      }
+      return parent.updatedAt || new Date().toISOString();
     },
   },
 
   Comment: {
-    author: async (parent) => {
+    user: async (parent) => {
+      if (parent.user) return parent.user;
       return await prisma.user.findUnique({
-        where: { id: parent.authorId },
+        where: { id: parent.userId },
         include: { profile: true }
       });
     },
     replies: async (parent) => {
+      if (parent.replies) return parent.replies;
       return await prisma.comment.findMany({
         where: { parentId: parent.id },
+        include: {
+          user: { include: { profile: true } }
+        },
         orderBy: { createdAt: 'asc' }
       });
     },
-    likes: async (parent) => {
-      return await prisma.commentLike.findMany({
-        where: { commentId: parent.id },
-        include: { user: { include: { profile: true } } }
+    repliesCount: async (parent) => {
+      if (parent._count?.replies !== undefined) return parent._count.replies;
+      return await prisma.comment.count({
+        where: { parentId: parent.id }
+      });
+    },
+    likesCount: async (parent) => {
+      if (parent._count?.likes !== undefined) return parent._count.likes;
+      return await prisma.like.count({
+        where: { commentId: parent.id }
+      });
+    },
+    createdAt: (parent) => {
+      if (parent.createdAt instanceof Date) {
+        return parent.createdAt.toISOString();
+      }
+      return parent.createdAt || new Date().toISOString();
+    },
+    updatedAt: (parent) => {
+      if (parent.updatedAt instanceof Date) {
+        return parent.updatedAt.toISOString();
+      }
+      return parent.updatedAt || new Date().toISOString();
+    },
+  },
+
+  Category: {
+    postsCount: async (parent) => {
+      if (parent._count?.posts !== undefined) return parent._count.posts;
+      return await prisma.post.count({
+        where: { categoryId: parent.id, status: 'PUBLISHED' }
       });
     },
   },

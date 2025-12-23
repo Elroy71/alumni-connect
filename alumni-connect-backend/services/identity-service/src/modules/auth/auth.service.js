@@ -7,10 +7,10 @@ class AuthService {
   // ✅ Generate JWT Token
   generateToken(user) {
     return jwt.sign(
-      { 
-        userId: user.id, 
-        email: user.email, 
-        role: user.role 
+      {
+        userId: user.id,
+        email: user.email,
+        role: user.role
       },
       process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this-in-production',
       { expiresIn: '7d' }
@@ -20,7 +20,7 @@ class AuthService {
   // ✅ Register new user
   async register(input) {
     try {
-      const { email, password, fullName, nim, major, graduationYear } = input;
+      const { email, password, fullName, nim, batch, major, graduationYear } = input;
 
       // Check if user already exists
       const existingUser = await prisma.user.findUnique({
@@ -40,13 +40,14 @@ class AuthService {
           email,
           password: hashedPassword,
           role: 'ALUMNI',
-          isVerified: true,
+          status: 'ACTIVE',
           profile: {
             create: {
               fullName,
               nim,
+              batch,
               major,
-              graduationYear: parseInt(graduationYear)
+              graduationYear: graduationYear ? parseInt(graduationYear) : null
             }
           }
         },
@@ -107,7 +108,7 @@ class AuthService {
   verifyToken(token) {
     try {
       return jwt.verify(
-        token, 
+        token,
         process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this-in-production'
       );
     } catch (error) {

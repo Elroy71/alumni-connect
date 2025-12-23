@@ -1,4 +1,6 @@
 import jwt from 'jsonwebtoken';
+import dotenv from 'dotenv';
+dotenv.config();
 
 export const authenticate = (req) => {
   const authHeader = req.headers.authorization;
@@ -21,3 +23,6 @@ export const authenticate = (req) => {
     return null;
   }
 };
+
+// Default export for backward compatibility
+export default authenticate;

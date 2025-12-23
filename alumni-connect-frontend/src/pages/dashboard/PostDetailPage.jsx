@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  Heart, 
-  MessageCircle, 
-  Eye, 
+import {
+  ArrowLeft,
+  Heart,
+  MessageCircle,
+  Eye,
   Send,
   Trash2,
   Calendar,
   Briefcase,
-  Award
+  Award,
+  X
 } from 'lucide-react';
 import { GET_POST, GET_COMMENTS } from '../../graphql/forum.queries';
 import { CREATE_COMMENT, TOGGLE_LIKE, DELETE_POST } from '../../graphql/forum.mutations';
@@ -230,11 +231,10 @@ const PostDetailPage = () => {
           <div className="flex items-center gap-6">
             <button
               onClick={handleLike}
-              className={`flex items-center gap-2 font-semibold transition-colors ${
-                post.isLiked
-                  ? 'text-red-500'
-                  : 'text-dark-600 hover:text-red-500'
-              }`}
+              className={`flex items-center gap-2 font-semibold transition-colors ${post.isLiked
+                ? 'text-red-500'
+                : 'text-dark-600 hover:text-red-500'
+                }`}
             >
               <Heart className={`w-6 h-6 ${post.isLiked ? 'fill-current' : ''}`} />
               <span>{post.likesCount || 0}</span>
