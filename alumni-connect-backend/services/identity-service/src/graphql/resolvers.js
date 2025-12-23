@@ -52,31 +52,33 @@ const resolvers = {
     },
 
     // ==================== JOB QUERIES ====================
-    jobs: async (_, { filter }) => {
-      return await JobService.getJobs(filter);
+    jobs: async (_, { filter }, context) => {
+      const userId = context.user?.userId || null;
+      return await JobService.getJobs(filter, userId);
     },
 
     job: async (_, { id }, context) => {
-      return await JobService.getJobById(id, context.user);
+      const userId = context.user?.userId || null;
+      return await JobService.getJobById(id, userId);
     },
 
-    myPostedJobs: async (_, { filter }, context) => {
+    myPostedJobs: async (_, __, context) => {
       if (!context.user) throw new Error('Not authenticated');
-      return await JobService.getMyPostedJobs(context.user.userId, filter);
+      return await JobService.getMyPostedJobs(context.user.userId);
     },
 
     myApplications: async (_, { status }, context) => {
       if (!context.user) throw new Error('Not authenticated');
-      return await JobService.getMyApplications(context.user.userId, status);
+      return await JobService.getMyApplications(context.user.userId, { status });
     },
 
     mySavedJobs: async (_, __, context) => {
       if (!context.user) throw new Error('Not authenticated');
-      return await JobService.getMySavedJobs(context.user.userId);
+      return await JobService.getSavedJobs(context.user.userId);
     },
 
     companies: async () => {
-      return await JobService.getAllCompanies();
+      return await JobService.getCompanies();
     },
 
     company: async (_, { id }) => {
@@ -206,17 +208,18 @@ const resolvers = {
 
     applyJob: async (_, { jobId, input }, context) => {
       if (!context.user) throw new Error('Not authenticated');
-      return await JobService.applyJob(jobId, context.user.userId, input);
+      return await JobService.applyJob(context.user.userId, jobId, input);
     },
 
     toggleSaveJob: async (_, { jobId }, context) => {
       if (!context.user) throw new Error('Not authenticated');
-      return await JobService.toggleSaveJob(jobId, context.user.userId);
+      const result = await JobService.toggleSaveJob(context.user.userId, jobId);
+      return { saved: result.saved, message: result.message, success: true };
     },
 
     createCompany: async (_, { input }, context) => {
       if (!context.user) throw new Error('Not authenticated');
-      return await JobService.createCompany(context.user.userId, input);
+      return await JobService.createCompany(input);
     },
 
     // ==================== FUNDING MUTATIONS ====================
@@ -353,16 +356,75 @@ const resolvers = {
 
   Job: {
     company: async (parent) => {
+      if (parent.company) return parent.company;
       if (!parent.companyId) return null;
       return await prisma.company.findUnique({
         where: { id: parent.companyId }
       });
     },
-    postedBy: async (parent) => {
+    poster: async (parent) => {
+      if (parent.poster) return parent.poster;
       return await prisma.user.findUnique({
-        where: { id: parent.postedById },
+        where: { id: parent.postedBy },
         include: { profile: true }
       });
+    },
+    applicationsCount: (parent) => {
+      return parent._count?.applications || parent.applicationsCount || 0;
+    },
+    savedCount: (parent) => {
+      return parent._count?.savedJobs || parent.savedCount || 0;
+    },
+    hasApplied: (parent) => {
+      return parent.hasApplied || false;
+    },
+    isSaved: (parent) => {
+      return parent.isSaved || false;
+    },
+    createdAt: (parent) => {
+      if (parent.createdAt instanceof Date) {
+        return parent.createdAt.toISOString();
+      }
+      return parent.createdAt || new Date().toISOString();
+    },
+    deadline: (parent) => {
+      if (!parent.deadline) return null;
+      if (parent.deadline instanceof Date) {
+        return parent.deadline.toISOString();
+      }
+      return parent.deadline;
+    },
+  },
+
+  Company: {
+    jobsCount: async (parent) => {
+      if (parent._count?.jobs !== undefined) return parent._count.jobs;
+      return await prisma.job.count({
+        where: { companyId: parent.id, isActive: true }
+      });
+    },
+  },
+
+  Application: {
+    job: async (parent) => {
+      if (parent.job) return parent.job;
+      return await prisma.job.findUnique({
+        where: { id: parent.jobId },
+        include: { company: true }
+      });
+    },
+    user: async (parent) => {
+      if (parent.user) return parent.user;
+      return await prisma.user.findUnique({
+        where: { id: parent.userId },
+        include: { profile: true }
+      });
+    },
+    appliedAt: (parent) => {
+      if (parent.appliedAt instanceof Date) {
+        return parent.appliedAt.toISOString();
+      }
+      return parent.appliedAt || new Date().toISOString();
     },
   },
 

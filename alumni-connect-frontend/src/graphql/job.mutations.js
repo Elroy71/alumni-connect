@@ -13,7 +13,7 @@ export const APPLY_JOB = gql`
 export const TOGGLE_SAVE_JOB = gql`
   mutation ToggleSaveJob($jobId: ID!) {
     toggleSaveJob(jobId: $jobId) {
-      success
+      saved
       message
     }
   }

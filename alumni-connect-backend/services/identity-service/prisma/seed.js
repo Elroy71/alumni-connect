@@ -109,43 +109,57 @@ async function main() {
     const companies = [
         {
             name: 'Google Indonesia',
+            slug: 'google-indonesia',
             description: 'Google adalah perusahaan teknologi multinasional Amerika yang mengkhususkan diri dalam layanan dan produk terkait Internet.',
             website: 'https://google.com',
+            logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Google_2015_logo.svg/240px-Google_2015_logo.svg.png',
             industry: 'Technology',
-            size: 'LARGE',
-            location: 'Jakarta, Indonesia'
+            size: '10000+',
+            location: 'Jakarta, Indonesia',
+            founded: 1998
         },
         {
             name: 'Tokopedia',
+            slug: 'tokopedia',
             description: 'Tokopedia adalah salah satu marketplace terbesar di Indonesia.',
             website: 'https://tokopedia.com',
+            logo: 'https://ecs7.tokopedia.net/assets-tokopedia-lite/v2/zeus/kratos/eb7574d8.png',
             industry: 'E-Commerce',
-            size: 'LARGE',
-            location: 'Jakarta, Indonesia'
+            size: '5000-10000',
+            location: 'Jakarta, Indonesia',
+            founded: 2009
         },
         {
             name: 'Gojek',
+            slug: 'gojek',
             description: 'Gojek adalah perusahaan teknologi Indonesia yang menyediakan layanan transportasi dan pembayaran digital.',
             website: 'https://gojek.com',
+            logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e2/Gojek_logo_2022.svg/240px-Gojek_logo_2022.svg.png',
             industry: 'Technology',
-            size: 'LARGE',
-            location: 'Jakarta, Indonesia'
+            size: '5000-10000',
+            location: 'Jakarta, Indonesia',
+            founded: 2010
         },
         {
             name: 'Telkom Indonesia',
+            slug: 'telkom-indonesia',
             description: 'PT Telkom Indonesia adalah perusahaan BUMN yang bergerak di bidang telekomunikasi.',
             website: 'https://telkom.co.id',
+            logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Telkom_Indonesia.svg/240px-Telkom_Indonesia.svg.png',
             industry: 'Telecommunications',
-            size: 'LARGE',
-            location: 'Bandung, Indonesia'
+            size: '10000+',
+            location: 'Bandung, Indonesia',
+            founded: 1991
         },
         {
             name: 'Startup ABC',
+            slug: 'startup-abc',
             description: 'Startup inovatif di bidang fintech yang didirikan oleh alumni Telkom University.',
             website: 'https://startupABC.id',
             industry: 'Fintech',
-            size: 'SMALL',
-            location: 'Bandung, Indonesia'
+            size: '50-200',
+            location: 'Bandung, Indonesia',
+            founded: 2022
         }
     ];
 

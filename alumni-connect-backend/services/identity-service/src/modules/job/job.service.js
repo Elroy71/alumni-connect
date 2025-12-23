@@ -2,7 +2,7 @@ import prisma from '../../config/database.js';
 
 class JobService {
   // ==================== JOBS ====================
-  
+
   async createJob(userId, data) {
     const {
       title,
@@ -68,7 +68,7 @@ class JobService {
     return job;
   }
 
-  async getJobs(filter = {}) {
+  async getJobs(filter = {}, userId = null) {
     const {
       search,
       type,
@@ -89,7 +89,7 @@ class JobService {
       ...(type && { type }),
       ...(level && { level }),
       ...(location && { location: { contains: location, mode: 'insensitive' } }),
-      ...(isRemote !== undefined && { isRemote }),
+      ...(isRemote === true || isRemote === false ? { isRemote } : {}),
       ...(companyId && { companyId }),
       ...(postedBy && { postedBy }),
       ...(search && {
@@ -130,8 +130,35 @@ class JobService {
       prisma.job.count({ where })
     ]);
 
+    // If user is authenticated, check which jobs they've saved and applied to
+    let savedJobIds = new Set();
+    let appliedJobIds = new Set();
+
+    if (userId) {
+      const [savedJobs, applications] = await Promise.all([
+        prisma.savedJob.findMany({
+          where: { userId },
+          select: { jobId: true }
+        }),
+        prisma.application.findMany({
+          where: { userId },
+          select: { jobId: true }
+        })
+      ]);
+
+      savedJobIds = new Set(savedJobs.map(s => s.jobId));
+      appliedJobIds = new Set(applications.map(a => a.jobId));
+    }
+
+    // Add isSaved and hasApplied flags to each job
+    const jobsWithStatus = jobs.map(job => ({
+      ...job,
+      isSaved: savedJobIds.has(job.id),
+      hasApplied: appliedJobIds.has(job.id)
+    }));
+
     return {
-      jobs,
+      jobs: jobsWithStatus,
       pagination: {
         total,
         limit,
@@ -139,6 +166,34 @@ class JobService {
         hasMore: offset + limit < total
       }
     };
+  }
+
+  async getMyPostedJobs(userId) {
+    const jobs = await prisma.job.findMany({
+      where: { postedBy: userId },
+      include: {
+        poster: {
+          include: {
+            profile: {
+              select: {
+                fullName: true,
+                avatar: true
+              }
+            }
+          }
+        },
+        company: true,
+        _count: {
+          select: {
+            applications: true,
+            savedJobs: true
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    return jobs;
   }
 
   async getJobById(jobId, userId = null) {
