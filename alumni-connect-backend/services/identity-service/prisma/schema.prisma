@@ -422,10 +422,12 @@ enum EventType {
 
 enum EventStatus {
   DRAFT
+  PENDING_APPROVAL
   PUBLISHED
   ONGOING
   COMPLETED
   CANCELLED
+  REJECTED
 
   @@schema("identity_schema")
 }
@@ -463,6 +465,13 @@ model Event {
   viewCount       Int                 @default(0)
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
+  
+  // Approval fields
+  approvedBy      String?
+  approvedAt      DateTime?
+  rejectedBy      String?
+  rejectedAt      DateTime?
+  rejectionReason String?             @db.Text
 
   // Relations
   organizer       User                @relation("EventOrganizer", fields: [organizerId], references: [id], onDelete: Cascade)
@@ -500,9 +509,11 @@ model Registration {
 
 enum CampaignStatus {
   DRAFT
+  PENDING_APPROVAL
   ACTIVE
   COMPLETED
   CANCELLED
+  REJECTED
 
   @@schema("identity_schema")
 }
@@ -528,6 +539,13 @@ model Campaign {
   viewCount       Int             @default(0)
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
+  
+  // Approval fields
+  approvedBy      String?
+  approvedAt      DateTime?
+  rejectedBy      String?
+  rejectedAt      DateTime?
+  rejectionReason String?         @db.Text
 
   // Relations
   creator         User            @relation("CampaignCreator", fields: [creatorId], references: [id], onDelete: Cascade)

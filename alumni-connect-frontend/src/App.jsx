@@ -27,33 +27,47 @@ import MyDonationsPage from './pages/dashboard/MyDonationsPage';
 import useAuthStore from './features/auth/store/authStore';
 import ConnectionStatus from './components/ui/ConnectionStatus';
 
+// Admin Imports
+import AdminLayout from './components/Admin/AdminLayout';
+import AdminDashboard from './pages/Admin/AdminDashboard';
+import UserManagement from './pages/Admin/UserManagement';
+import EventApproval from './pages/Admin/EventApproval';
+import FundingApproval from './pages/Admin/FundingApproval';
+
+
 
 function App() {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
+
+  // Helper to get redirect path based on user role
+  const getRedirectPath = () => {
+    if (!user) return '/dashboard';
+    return user.role === 'super_admin' ? '/admin' : '/dashboard';
+  };
 
   return (
     <Router>
       <Routes>
         {/* Public Routes */}
-        <Route 
-          path="/" 
+        <Route
+          path="/"
           element={
-            isAuthenticated ? <Navigate to="/dashboard" replace /> : <LandingPage />
-          } 
+            isAuthenticated ? <Navigate to={getRedirectPath()} replace /> : <LandingPage />
+          }
         />
-        
-        <Route 
-          path="/login" 
+
+        <Route
+          path="/login"
           element={
-            isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage />
-          } 
+            isAuthenticated ? <Navigate to={getRedirectPath()} replace /> : <LoginPage />
+          }
         />
-        
-        <Route 
-          path="/register" 
+
+        <Route
+          path="/register"
           element={
-            isAuthenticated ? <Navigate to="/dashboard" replace /> : <RegisterPage />
-          } 
+            isAuthenticated ? <Navigate to={getRedirectPath()} replace /> : <RegisterPage />
+          }
         />
 
         {/* Protected Dashboard Routes */}
@@ -69,29 +83,44 @@ function App() {
           <Route path="profile" element={<ProfilePage />} />
           <Route path="card" element={<AlumniCardPage />} />
           <Route path="settings" element={<SettingsPage />} />
-          
+
           {/* Forum Routes */}
           <Route path="forum" element={<ForumPage />} />
           <Route path="forum/create" element={<CreatePostPage />} />
           <Route path="forum/post/:id" element={<PostDetailPage />} />
-          
+
           {/* Jobs Routes */}
           <Route path="jobs" element={<JobsPage />} />
           <Route path="jobs/create" element={<CreateJobPage />} />
           <Route path="jobs/:id" element={<JobDetailPage />} />
           <Route path="my-applications" element={<MyApplicationsPage />} />
-          
+
           {/* Events Routes */}
           <Route path="events" element={<EventsPage />} />
           <Route path="events/create" element={<CreateEventPage />} />
           <Route path="events/:id" element={<EventDetailPage />} />
           <Route path="my-events" element={<MyEventsPage />} />
-          
+
           {/* Funding Routes */}
           <Route path="funding" element={<FundingPage />} />
           <Route path="funding/create" element={<CreateCampaignPage />} />
           <Route path="funding/:id" element={<CampaignDetailPage />} />
           <Route path="my-donations" element={<MyDonationsPage />} />
+        </Route>
+
+        {/* Admin Routes */}
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute>
+              <AdminLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<AdminDashboard />} />
+          <Route path="users" element={<UserManagement />} />
+          <Route path="events" element={<EventApproval />} />
+          <Route path="funding" element={<FundingApproval />} />
         </Route>
 
         {/* Catch All */}

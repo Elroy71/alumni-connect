@@ -4,9 +4,12 @@ import ProfileService from '../modules/profile/profile.service.js';
 import ForumService from '../modules/forum/forum.service.js';
 import JobService from '../modules/job/job.service.js';
 import FundingService from '../modules/funding/funding.service.js';
+import { adminResolvers } from '../modules/admin/admin.resolver.js';
 
 const resolvers = {
   Query: {
+    ...adminResolvers.Query,
+
     // ==================== AUTH QUERIES ====================
     me: async (_, __, context) => {
       if (!context.user) throw new Error('Not authenticated');
@@ -110,6 +113,8 @@ const resolvers = {
   },
 
   Mutation: {
+    ...adminResolvers.Mutation,
+
     // ==================== AUTH MUTATIONS ====================
     register: async (_, { input }) => {
       console.log('📝 Register mutation called for:', input.email);

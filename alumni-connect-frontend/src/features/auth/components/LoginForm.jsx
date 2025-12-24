@@ -23,7 +23,7 @@ const LoginForm = () => {
       ...prev,
       [name]: value
     }));
-    
+
     // Clear error when user starts typing
     if (formErrors[name]) {
       setFormErrors(prev => ({
@@ -57,13 +57,18 @@ const LoginForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
 
     const result = await login(formData.email, formData.password);
-    
+
     if (result.success) {
-      navigate('/dashboard');
+      // Redirect based on role
+      if (result.user.role === 'super_admin') {
+        navigate('/admin');
+      } else {
+        navigate('/dashboard');
+      }
     }
   };
 

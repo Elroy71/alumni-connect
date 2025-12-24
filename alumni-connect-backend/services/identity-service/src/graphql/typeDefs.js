@@ -1,8 +1,8 @@
 // const gql = require('graphql-tag');
 import gql from 'graphql-tag';
+import { adminTypeDefs } from '../modules/admin/admin.typeDefs.js';
 
-
-const typeDefs = gql`
+const baseTypeDefs = gql`
   # ==================== BASE TYPES ====================
 
   type MessageResponse {
@@ -494,10 +494,12 @@ const typeDefs = gql`
 
   enum EventStatus {
     DRAFT
+    PENDING_APPROVAL
     PUBLISHED
     ONGOING
     COMPLETED
     CANCELLED
+    REJECTED
   }
 
   enum RegistrationStatus {
@@ -635,9 +637,11 @@ const typeDefs = gql`
 
   enum CampaignStatus {
     DRAFT
+    PENDING_APPROVAL
     ACTIVE
     COMPLETED
     CANCELLED
+    REJECTED
   }
 
   type Campaign {
@@ -760,6 +764,9 @@ const typeDefs = gql`
   }
     
 `;
+
+// Merge base and admin typeDefs
+const typeDefs = [baseTypeDefs, adminTypeDefs];
 
 // module.exports = typeDefs;
 export default typeDefs;

@@ -2,7 +2,7 @@ import prisma from '../../config/database.js';
 
 class FundingService {
   // ==================== CAMPAIGNS ====================
-  
+
   async createCampaign(userId, data) {
     const {
       title,
@@ -30,7 +30,7 @@ class FundingService {
         beneficiary,
         bankAccount,
         phoneNumber,
-        status: 'ACTIVE'
+        status: 'PENDING_APPROVAL'
       },
       include: {
         creator: {
@@ -109,7 +109,7 @@ class FundingService {
     // Calculate percentage for each campaign
     const campaignsWithPercentage = campaigns.map(campaign => ({
       ...campaign,
-      percentage: campaign.goalAmount > 0 
+      percentage: campaign.goalAmount > 0
         ? Math.min((campaign.currentAmount / campaign.goalAmount) * 100, 100)
         : 0,
       daysLeft: Math.max(
@@ -173,10 +173,10 @@ class FundingService {
     }
 
     // Calculate percentage and days left
-    campaign.percentage = campaign.goalAmount > 0 
+    campaign.percentage = campaign.goalAmount > 0
       ? Math.min((campaign.currentAmount / campaign.goalAmount) * 100, 100)
       : 0;
-    
+
     campaign.daysLeft = Math.max(
       0,
       Math.ceil((new Date(campaign.endDate) - new Date()) / (1000 * 60 * 60 * 24))

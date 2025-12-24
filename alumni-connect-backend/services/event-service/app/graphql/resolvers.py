@@ -320,7 +320,7 @@ class Mutation:
                 requirements=input.requirements,
                 agenda=input.agenda,
                 speakers=input.speakers,
-                status='PUBLISHED'
+                status='PENDING_APPROVAL'  # Events need admin approval
             )
             
             db.add(event)
