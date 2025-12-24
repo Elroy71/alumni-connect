@@ -142,12 +142,12 @@ class Query:
             db.close()
 
     @strawberry.field
-    def event(self, id: str, info: strawberry.Info = None) -> Optional[Event]:
+    def event(self, id: strawberry.ID, info: strawberry.Info = None) -> Optional[Event]:
         db: Session = next(get_db())
         user = get_current_user(info)
         
         try:
-            event = db.query(EventModel).filter(EventModel.id == id).first()
+            event = db.query(EventModel).filter(EventModel.id == str(id)).first()
             if not event:
                 raise Exception("Event not found")
             
@@ -236,16 +236,55 @@ class Query:
             
             registrations = query.order_by(RegistrationModel.registeredAt.desc()).all()
             
-            return [Registration(
-                id=r.id,
-                eventId=r.eventId,
-                userId=r.userId,
-                status=RegistrationStatus[r.status.value],
-                notes=r.notes,
-                attendedAt=r.attendedAt,
-                registeredAt=r.registeredAt,
-                updatedAt=r.updatedAt
-            ) for r in registrations]
+            result = []
+            for r in registrations:
+                event_model = db.query(EventModel).filter(EventModel.id == r.eventId).first()
+                
+                event_obj = None
+                if event_model:
+                    event_obj = Event(
+                        id=event_model.id,
+                        organizerId=event_model.organizerId,
+                        title=event_model.title,
+                        description=event_model.description,
+                        type=event_model.type,
+                        status=event_model.status,
+                        coverImage=event_model.coverImage,
+                        startDate=event_model.startDate,
+                        endDate=event_model.endDate,
+                        location=event_model.location,
+                        isOnline=event_model.isOnline,
+                        meetingUrl=event_model.meetingUrl,
+                        capacity=event_model.capacity,
+                        currentAttendees=event_model.currentAttendees,
+                        price=event_model.price,
+                        currency=event_model.currency,
+                        tags=event_model.tags or [],
+                        requirements=event_model.requirements,
+                        agenda=event_model.agenda,
+                        speakers=event_model.speakers,
+                        viewCount=event_model.viewCount,
+                        createdAt=event_model.createdAt,
+                        updatedAt=event_model.updatedAt,
+                        registrationsCount=0,
+                        hasRegistered=True,
+                        isFull=False,
+                        daysLeft=max(0, (event_model.endDate - datetime.utcnow()).days)
+                    )
+                
+                result.append(Registration(
+                    id=r.id,
+                    eventId=r.eventId,
+                    userId=r.userId,
+                    status=RegistrationStatus[r.status.value],
+                    notes=r.notes,
+                    attendedAt=r.attendedAt,
+                    registeredAt=r.registeredAt,
+                    updatedAt=r.updatedAt,
+                    event=event_obj
+                ))
+            
+            return result
         finally:
             db.close()
 
@@ -326,7 +365,7 @@ class Mutation:
     @strawberry.mutation
     def registerEvent(
         self,
-        eventId: str,
+        eventId: strawberry.ID,
         input: Optional[RegisterEventInput] = None,
         info: strawberry.Info = None
     ) -> Registration:
@@ -337,7 +376,7 @@ class Mutation:
             raise Exception("Not authenticated")
         
         try:
-            event = db.query(EventModel).filter(EventModel.id == eventId).first()
+            event = db.query(EventModel).filter(EventModel.id == str(eventId)).first()
             if not event:
                 raise Exception("Event not found")
             
@@ -346,7 +385,7 @@ class Mutation:
             
             existing = db.query(RegistrationModel).filter(
                 and_(
-                    RegistrationModel.eventId == eventId,
+                    RegistrationModel.eventId == str(eventId),
                     RegistrationModel.userId == user['userId']
                 )
             ).first()
@@ -355,7 +394,7 @@ class Mutation:
                 raise Exception("You have already registered for this event")
             
             registrations_count = db.query(func.count(RegistrationModel.id)).filter(
-                RegistrationModel.eventId == eventId
+                RegistrationModel.eventId == str(eventId)
             ).scalar()
             
             if event.capacity and registrations_count >= event.capacity:
@@ -365,7 +404,7 @@ class Mutation:
                 raise Exception("Event has already started")
             
             registration = RegistrationModel(
-                eventId=eventId,
+                eventId=str(eventId),
                 userId=user['userId'],
                 notes=input.notes if input else None,
                 status='REGISTERED'
@@ -396,7 +435,7 @@ class Mutation:
     @strawberry.mutation
     def cancelRegistration(
         self,
-        eventId: str,
+        eventId: strawberry.ID,
         info: strawberry.Info = None
     ) -> MessageResponse:
         db: Session = next(get_db())
@@ -408,7 +447,7 @@ class Mutation:
         try:
             registration = db.query(RegistrationModel).filter(
                 and_(
-                    RegistrationModel.eventId == eventId,
+                    RegistrationModel.eventId == str(eventId),
                     RegistrationModel.userId == user['userId']
                 )
             ).first()
@@ -421,7 +460,7 @@ class Mutation:
             
             registration.status = 'CANCELLED'
             
-            event = db.query(EventModel).filter(EventModel.id == eventId).first()
+            event = db.query(EventModel).filter(EventModel.id == str(eventId)).first()
             if event:
                 event.currentAttendees = max(0, event.currentAttendees - 1)
             

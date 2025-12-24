@@ -48,7 +48,7 @@ class Event(Base):
     currentAttendees = Column(Integer, default=0)
     price = Column(Integer, default=0)
     currency = Column(String, default="IDR")
-    tags = Column(ARRAY(String), default=list)
+    tags = Column(ARRAY(String), server_default='{}')
     requirements = Column(Text)
     agenda = Column(Text)
     speakers = Column(Text)

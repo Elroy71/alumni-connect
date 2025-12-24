@@ -1,10 +1,10 @@
 import React from 'react';
 import { useQuery } from '@apollo/client';
 import { Link } from 'react-router-dom';
-import { 
-  MessageCircle, 
-  Briefcase, 
-  Calendar, 
+import {
+  MessageCircle,
+  Briefcase,
+  Calendar,
   Heart,
   TrendingUp,
   Users,
@@ -39,28 +39,28 @@ const DashboardHome = () => {
 
   const stats = [
     {
-      title: 'Forum Posts',
+      title: 'Postingan Forum',
       value: myPosts.length,
       icon: <MessageCircle className="w-8 h-8" />,
       color: 'bg-blue-500',
       link: '/dashboard/forum'
     },
     {
-      title: 'Job Applications',
+      title: 'Lamaran Kerja',
       value: myApplications.length,
       icon: <Briefcase className="w-8 h-8" />,
       color: 'bg-purple-500',
       link: '/dashboard/my-applications'
     },
     {
-      title: 'Event Registrations',
+      title: 'Registrasi Event',
       value: myEvents.length,
       icon: <Calendar className="w-8 h-8" />,
       color: 'bg-green-500',
       link: '/dashboard/my-events'
     },
     {
-      title: 'Total Donated',
+      title: 'Total Donasi',
       value: `Rp ${(totalDonated / 1000).toFixed(0)}K`,
       icon: <Heart className="w-8 h-8" />,
       color: 'bg-red-500',
@@ -70,29 +70,29 @@ const DashboardHome = () => {
 
   const quickActions = [
     {
-      title: 'Create Post',
-      description: 'Share something with alumni',
+      title: 'Buat Postingan',
+      description: 'Bagikan sesuatu dengan alumni',
       icon: <MessageCircle className="w-6 h-6" />,
       link: '/dashboard/forum/create',
       color: 'bg-blue-500'
     },
     {
-      title: 'Post Job',
-      description: 'Share job opportunities',
+      title: 'Pasang Lowongan',
+      description: 'Bagikan peluang kerja',
       icon: <Briefcase className="w-6 h-6" />,
       link: '/dashboard/jobs/create',
       color: 'bg-purple-500'
     },
     {
-      title: 'Create Event',
-      description: 'Organize alumni gathering',
+      title: 'Buat Event',
+      description: 'Selenggarakan acara alumni',
       icon: <Calendar className="w-6 h-6" />,
       link: '/dashboard/events/create',
       color: 'bg-green-500'
     },
     {
-      title: 'Start Campaign',
-      description: 'Raise funds for a cause',
+      title: 'Mulai Kampanye',
+      description: 'Galang dana untuk tujuan baik',
       icon: <Heart className="w-6 h-6" />,
       link: '/dashboard/funding/create',
       color: 'bg-red-500'
@@ -104,10 +104,10 @@ const DashboardHome = () => {
       {/* Welcome Section */}
       <div className="bg-gradient-to-r from-primary-600 to-secondary-600 rounded-2xl p-8 text-white">
         <h1 className="font-display font-bold text-3xl mb-2">
-          Welcome back, {user?.profile?.fullName || 'Alumni'}! 👋
+          Selamat datang kembali, {user?.profile?.fullName || 'Alumni'}! 👋
         </h1>
         <p className="text-primary-100">
-          Here's what's happening with your alumni network today.
+          Berikut aktivitas terbaru di jaringan alumni Anda.
         </p>
       </div>
 
@@ -133,7 +133,7 @@ const DashboardHome = () => {
       {/* Quick Actions */}
       <div>
         <h2 className="font-display font-bold text-2xl text-dark-900 mb-4">
-          Quick Actions
+          Aksi Cepat
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {quickActions.map((action, index) => (
@@ -159,15 +159,15 @@ const DashboardHome = () => {
         {/* Recent Posts */}
         <Card padding="lg">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-xl text-dark-900">Recent Posts</h3>
+            <h3 className="font-bold text-xl text-dark-900">Postingan Terbaru</h3>
             <Link to="/dashboard/forum" className="text-primary-600 hover:text-primary-700 text-sm font-semibold">
-              View All →
+              Lihat Semua →
             </Link>
           </div>
           {myPosts.length === 0 ? (
             <div className="text-center py-8 text-dark-500">
               <MessageCircle className="w-12 h-12 mx-auto mb-2 opacity-50" />
-              <p>No posts yet</p>
+              <p>Belum ada postingan</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -197,15 +197,15 @@ const DashboardHome = () => {
         {/* Upcoming Events */}
         <Card padding="lg">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-xl text-dark-900">Upcoming Events</h3>
+            <h3 className="font-bold text-xl text-dark-900">Event Mendatang</h3>
             <Link to="/dashboard/my-events" className="text-primary-600 hover:text-primary-700 text-sm font-semibold">
-              View All →
+              Lihat Semua →
             </Link>
           </div>
           {myEvents.length === 0 ? (
             <div className="text-center py-8 text-dark-500">
               <Calendar className="w-12 h-12 mx-auto mb-2 opacity-50" />
-              <p>No upcoming events</p>
+              <p>Tidak ada event mendatang</p>
             </div>
           ) : (
             <div className="space-y-3">

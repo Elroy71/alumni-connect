@@ -86,6 +86,23 @@ export const GET_MY_REGISTRATIONS = gql`
       attendedAt
       registeredAt
       updatedAt
+      event {
+        id
+        title
+        description
+        type
+        status
+        coverImage
+        startDate
+        endDate
+        location
+        isOnline
+        meetingUrl
+        capacity
+        currentAttendees
+        price
+        tags
+      }
     }
   }
 `;

@@ -10,7 +10,7 @@ import Input from '../../components/ui/Input';
 const CreateEventPage = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
-  
+
   const [eventForm, setEventForm] = useState({
     title: '',
     description: '',
@@ -31,7 +31,7 @@ const CreateEventPage = () => {
 
   const [createEvent, { loading }] = useMutation(CREATE_EVENT, {
     onCompleted: (data) => {
-      alert('Event created successfully!');
+      alert('Event berhasil dibuat!');
       navigate(`/dashboard/events/${data.createEvent.id}`);
     },
     onError: (error) => {
@@ -44,7 +44,7 @@ const CreateEventPage = () => {
 
     // Validation
     if (!eventForm.title || !eventForm.description || !eventForm.startDate || !eventForm.endDate || !eventForm.location) {
-      alert('Please fill all required fields');
+      alert('Mohon lengkapi semua field yang wajib diisi');
       return;
     }
 
@@ -80,7 +80,7 @@ const CreateEventPage = () => {
       {/* Header */}
       <div>
         <h1 className="font-display font-bold text-3xl text-dark-900 mb-2">
-          Create Event
+          Buat Event
         </h1>
         <p className="text-dark-600">
           Buat acara untuk mengumpulkan alumni
@@ -93,21 +93,21 @@ const CreateEventPage = () => {
           <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${step >= 1 ? 'bg-primary-600 text-white' : 'bg-dark-200'}`}>
             1
           </div>
-          <span className="font-semibold">Basic Info</span>
+          <span className="font-semibold">Info Dasar</span>
         </div>
         <div className={`w-16 h-1 ${step >= 2 ? 'bg-primary-600' : 'bg-dark-200'}`} />
         <div className={`flex items-center gap-2 ${step >= 2 ? 'text-primary-600' : 'text-dark-400'}`}>
           <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${step >= 2 ? 'bg-primary-600 text-white' : 'bg-dark-200'}`}>
             2
           </div>
-          <span className="font-semibold">Details</span>
+          <span className="font-semibold">Detail</span>
         </div>
         <div className={`w-16 h-1 ${step >= 3 ? 'bg-primary-600' : 'bg-dark-200'}`} />
         <div className={`flex items-center gap-2 ${step >= 3 ? 'text-primary-600' : 'text-dark-400'}`}>
           <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${step >= 3 ? 'bg-primary-600 text-white' : 'bg-dark-200'}`}>
             3
           </div>
-          <span className="font-semibold">Review</span>
+          <span className="font-semibold">Tinjauan</span>
         </div>
       </div>
 
@@ -122,10 +122,10 @@ const CreateEventPage = () => {
               </h2>
 
               <Input
-                label="Event Title *"
+                label="Judul Event *"
                 value={eventForm.title}
                 onChange={(e) => setEventForm({ ...eventForm, title: e.target.value })}
-                placeholder="e.g. Alumni Reunion 2024"
+                placeholder="contoh: Reuni Alumni 2024"
                 required
               />
 
@@ -161,7 +161,7 @@ const CreateEventPage = () => {
                 </div>
 
                 <Input
-                  label="Cover Image URL"
+                  label="URL Cover Image"
                   value={eventForm.coverImage}
                   onChange={(e) => setEventForm({ ...eventForm, coverImage: e.target.value })}
                   placeholder="https://..."
@@ -170,7 +170,7 @@ const CreateEventPage = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
-                  label="Start Date & Time *"
+                  label="Tanggal & Waktu Mulai *"
                   type="datetime-local"
                   value={eventForm.startDate}
                   onChange={(e) => setEventForm({ ...eventForm, startDate: e.target.value })}
@@ -178,7 +178,7 @@ const CreateEventPage = () => {
                 />
 
                 <Input
-                  label="End Date & Time *"
+                  label="Tanggal & Waktu Selesai *"
                   type="datetime-local"
                   value={eventForm.endDate}
                   onChange={(e) => setEventForm({ ...eventForm, endDate: e.target.value })}
@@ -193,7 +193,7 @@ const CreateEventPage = () => {
                   size="lg"
                   onClick={() => setStep(2)}
                 >
-                  Next Step →
+                  Langkah Berikutnya →
                 </Button>
               </div>
             </div>
@@ -210,7 +210,7 @@ const CreateEventPage = () => {
               </h2>
 
               <Input
-                label="Location *"
+                label="Lokasi *"
                 value={eventForm.location}
                 onChange={(e) => setEventForm({ ...eventForm, location: e.target.value })}
                 placeholder="Gedung Rektorat Telkom University"
@@ -228,7 +228,7 @@ const CreateEventPage = () => {
                 />
                 <label htmlFor="online" className="font-semibold text-dark-900 flex items-center gap-2">
                   <Video className="w-5 h-5" />
-                  Online Event
+                  Event Online (Daring)
                 </label>
               </div>
 
@@ -243,7 +243,7 @@ const CreateEventPage = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
-                  label="Capacity (Max Attendees)"
+                  label="Kapasitas (Maks Peserta)"
                   type="number"
                   value={eventForm.capacity}
                   onChange={(e) => setEventForm({ ...eventForm, capacity: e.target.value })}
@@ -252,7 +252,7 @@ const CreateEventPage = () => {
                 />
 
                 <Input
-                  label="Price (IDR, 0 = Gratis)"
+                  label="Harga (IDR, 0 = Gratis)"
                   type="number"
                   value={eventForm.price}
                   onChange={(e) => setEventForm({ ...eventForm, price: e.target.value })}
@@ -262,10 +262,10 @@ const CreateEventPage = () => {
               </div>
 
               <Input
-                label="Tags (pisahkan dengan koma)"
+                label="Tag (pisahkan dengan koma)"
                 value={eventForm.tags}
                 onChange={(e) => setEventForm({ ...eventForm, tags: e.target.value })}
-                placeholder="networking, tech, career"
+                placeholder="networking, tech, karier"
               />
 
               <div className="flex justify-between">
@@ -275,7 +275,7 @@ const CreateEventPage = () => {
                   size="lg"
                   onClick={() => setStep(1)}
                 >
-                  ← Back
+                  ← Kembali
                 </Button>
                 <Button
                   type="button"
@@ -283,7 +283,7 @@ const CreateEventPage = () => {
                   size="lg"
                   onClick={() => setStep(3)}
                 >
-                  Next Step →
+                  Langkah Berikutnya →
                 </Button>
               </div>
             </div>
@@ -295,11 +295,11 @@ const CreateEventPage = () => {
           <Card padding="lg">
             <div className="space-y-6">
               <h2 className="font-display font-bold text-2xl text-dark-900">
-                Requirements & Agenda
+                Persyaratan & Agenda
               </h2>
 
               <div>
-                <label className="block font-semibold text-dark-900 mb-2">Requirements (Optional)</label>
+                <label className="block font-semibold text-dark-900 mb-2">Persyaratan (Opsional)</label>
                 <textarea
                   value={eventForm.requirements}
                   onChange={(e) => setEventForm({ ...eventForm, requirements: e.target.value })}
@@ -310,7 +310,7 @@ const CreateEventPage = () => {
               </div>
 
               <div>
-                <label className="block font-semibold text-dark-900 mb-2">Agenda (Optional)</label>
+                <label className="block font-semibold text-dark-900 mb-2">Agenda (Opsional)</label>
                 <textarea
                   value={eventForm.agenda}
                   onChange={(e) => setEventForm({ ...eventForm, agenda: e.target.value })}
@@ -321,7 +321,7 @@ const CreateEventPage = () => {
               </div>
 
               <div>
-                <label className="block font-semibold text-dark-900 mb-2">Speakers (Optional)</label>
+                <label className="block font-semibold text-dark-900 mb-2">Pembicara (Opsional)</label>
                 <textarea
                   value={eventForm.speakers}
                   onChange={(e) => setEventForm({ ...eventForm, speakers: e.target.value })}
@@ -338,7 +338,7 @@ const CreateEventPage = () => {
                   size="lg"
                   onClick={() => setStep(2)}
                 >
-                  ← Back
+                  ← Kembali
                 </Button>
                 <Button
                   type="submit"
@@ -347,7 +347,7 @@ const CreateEventPage = () => {
                   loading={loading}
                   disabled={loading}
                 >
-                  {loading ? 'Creating...' : 'Create Event'}
+                  {loading ? 'Membuat...' : 'Buat Event'}
                 </Button>
               </div>
             </div>

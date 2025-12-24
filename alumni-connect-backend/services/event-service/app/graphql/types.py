@@ -70,6 +70,7 @@ class Registration:
     attendedAt: Optional[datetime]
     registeredAt: datetime
     updatedAt: datetime
+    event: Optional[Event] = None
 
 @strawberry.type
 class Pagination:
