@@ -31,6 +31,40 @@ const resolvers = {
       return await ProfileService.getProfiles(filter);
     },
 
+    myProfile: async (_, __, context) => {
+      if (!context.user) throw new Error('Not authenticated');
+
+      const profile = await prisma.profile.findUnique({
+        where: { userId: context.user.userId },
+        include: {
+          experiences: {
+            orderBy: [
+              { isCurrentJob: 'desc' },
+              { startDate: 'desc' }
+            ]
+          },
+          education: {
+            orderBy: [
+              { isCurrentStudy: 'desc' },
+              { startDate: 'desc' }
+            ]
+          },
+          skillsList: {
+            orderBy: { name: 'asc' }
+          },
+          achievements: {
+            orderBy: { issueDate: 'desc' }
+          }
+        }
+      });
+
+      if (!profile) {
+        throw new Error('Profile not found');
+      }
+
+      return profile;
+    },
+
     // ==================== FORUM QUERIES ====================
     posts: async (_, { filter }) => {
       return await ForumService.getPosts(filter);
@@ -149,6 +183,232 @@ const resolvers = {
       return await ProfileService.updateProfile(context.user.userId, input);
     },
 
+    // ==================== EXPERIENCE MUTATIONS ====================
+    addExperience: async (_, { input }, context) => {
+      if (!context.user) throw new Error('Not authenticated');
+
+      const profile = await prisma.profile.findUnique({
+        where: { userId: context.user.userId }
+      });
+
+      if (!profile) throw new Error('Profile not found');
+
+      return await prisma.experience.create({
+        data: {
+          ...input,
+          profileId: profile.id,
+          startDate: new Date(input.startDate),
+          endDate: input.endDate ? new Date(input.endDate) : null,
+        }
+      });
+    },
+
+    updateExperience: async (_, { id, input }, context) => {
+      if (!context.user) throw new Error('Not authenticated');
+
+      const experience = await prisma.experience.findUnique({
+        where: { id },
+        include: { profile: true }
+      });
+
+      if (!experience || experience.profile.userId !== context.user.userId) {
+        throw new Error('Not authorized');
+      }
+
+      return await prisma.experience.update({
+        where: { id },
+        data: {
+          ...input,
+          startDate: input.startDate ? new Date(input.startDate) : undefined,
+          endDate: input.endDate ? new Date(input.endDate) : null,
+        }
+      });
+    },
+
+    deleteExperience: async (_, { id }, context) => {
+      if (!context.user) throw new Error('Not authenticated');
+
+      const experience = await prisma.experience.findUnique({
+        where: { id },
+        include: { profile: true }
+      });
+
+      if (!experience || experience.profile.userId !== context.user.userId) {
+        throw new Error('Not authorized');
+      }
+
+      await prisma.experience.delete({ where: { id } });
+      return { success: true, message: 'Experience deleted successfully' };
+    },
+
+    // ==================== EDUCATION MUTATIONS ====================
+    addEducation: async (_, { input }, context) => {
+      if (!context.user) throw new Error('Not authenticated');
+
+      const profile = await prisma.profile.findUnique({
+        where: { userId: context.user.userId }
+      });
+
+      if (!profile) throw new Error('Profile not found');
+
+      return await prisma.education.create({
+        data: {
+          ...input,
+          profileId: profile.id,
+          startDate: new Date(input.startDate),
+          endDate: input.endDate ? new Date(input.endDate) : null,
+        }
+      });
+    },
+
+    updateEducation: async (_, { id, input }, context) => {
+      if (!context.user) throw new Error('Not authenticated');
+
+      const education = await prisma.education.findUnique({
+        where: { id },
+        include: { profile: true }
+      });
+
+      if (!education || education.profile.userId !== context.user.userId) {
+        throw new Error('Not authorized');
+      }
+
+      return await prisma.education.update({
+        where: { id },
+        data: {
+          ...input,
+          startDate: input.startDate ? new Date(input.startDate) : undefined,
+          endDate: input.endDate ? new Date(input.endDate) : null,
+        }
+      });
+    },
+
+    deleteEducation: async (_, { id }, context) => {
+      if (!context.user) throw new Error('Not authenticated');
+
+      const education = await prisma.education.findUnique({
+        where: { id },
+        include: { profile: true }
+      });
+
+      if (!education || education.profile.userId !== context.user.userId) {
+        throw new Error('Not authorized');
+      }
+
+      await prisma.education.delete({ where: { id } });
+      return { success: true, message: 'Education deleted successfully' };
+    },
+
+    // ==================== SKILL MUTATIONS ====================
+    addSkill: async (_, { input }, context) => {
+      if (!context.user) throw new Error('Not authenticated');
+
+      const profile = await prisma.profile.findUnique({
+        where: { userId: context.user.userId }
+      });
+
+      if (!profile) throw new Error('Profile not found');
+
+      return await prisma.skill.create({
+        data: {
+          ...input,
+          profileId: profile.id,
+        }
+      });
+    },
+
+    updateSkill: async (_, { id, input }, context) => {
+      if (!context.user) throw new Error('Not authenticated');
+
+      const skill = await prisma.skill.findUnique({
+        where: { id },
+        include: { profile: true }
+      });
+
+      if (!skill || skill.profile.userId !== context.user.userId) {
+        throw new Error('Not authorized');
+      }
+
+      return await prisma.skill.update({
+        where: { id },
+        data: input
+      });
+    },
+
+    deleteSkill: async (_, { id }, context) => {
+      if (!context.user) throw new Error('Not authenticated');
+
+      const skill = await prisma.skill.findUnique({
+        where: { id },
+        include: { profile: true }
+      });
+
+      if (!skill || skill.profile.userId !== context.user.userId) {
+        throw new Error('Not authorized');
+      }
+
+      await prisma.skill.delete({ where: { id } });
+      return { success: true, message: 'Skill deleted successfully' };
+    },
+
+    // ==================== ACHIEVEMENT MUTATIONS ====================
+    addAchievement: async (_, { input }, context) => {
+      if (!context.user) throw new Error('Not authenticated');
+
+      const profile = await prisma.profile.findUnique({
+        where: { userId: context.user.userId }
+      });
+
+      if (!profile) throw new Error('Profile not found');
+
+      return await prisma.achievement.create({
+        data: {
+          ...input,
+          profileId: profile.id,
+          issueDate: new Date(input.issueDate),
+          expiryDate: input.expiryDate ? new Date(input.expiryDate) : null,
+        }
+      });
+    },
+
+    updateAchievement: async (_, { id, input }, context) => {
+      if (!context.user) throw new Error('Not authenticated');
+
+      const achievement = await prisma.achievement.findUnique({
+        where: { id },
+        include: { profile: true }
+      });
+
+      if (!achievement || achievement.profile.userId !== context.user.userId) {
+        throw new Error('Not authorized');
+      }
+
+      return await prisma.achievement.update({
+        where: { id },
+        data: {
+          ...input,
+          issueDate: input.issueDate ? new Date(input.issueDate) : undefined,
+          expiryDate: input.expiryDate ? new Date(input.expiryDate) : null,
+        }
+      });
+    },
+
+    deleteAchievement: async (_, { id }, context) => {
+      if (!context.user) throw new Error('Not authenticated');
+
+      const achievement = await prisma.achievement.findUnique({
+        where: { id },
+        include: { profile: true }
+      });
+
+      if (!achievement || achievement.profile.userId !== context.user.userId) {
+        throw new Error('Not authorized');
+      }
+
+      await prisma.achievement.delete({ where: { id } });
+      return { success: true, message: 'Achievement deleted successfully' };
+    },
+
     // ==================== FORUM MUTATIONS ====================
     createPost: async (_, { input }, context) => {
       if (!context.user) throw new Error('Not authenticated');
@@ -255,6 +515,43 @@ const resolvers = {
   },
 
   // Type Resolvers
+  Profile: {
+    experiences: async (parent) => {
+      if (parent.experiences) return parent.experiences;
+      return await prisma.experience.findMany({
+        where: { profileId: parent.id },
+        orderBy: [
+          { isCurrentJob: 'desc' },
+          { startDate: 'desc' }
+        ]
+      });
+    },
+    education: async (parent) => {
+      if (parent.education) return parent.education;
+      return await prisma.education.findMany({
+        where: { profileId: parent.id },
+        orderBy: [
+          { isCurrentStudy: 'desc' },
+          { startDate: 'desc' }
+        ]
+      });
+    },
+    skillsList: async (parent) => {
+      if (parent.skillsList) return parent.skillsList;
+      return await prisma.skill.findMany({
+        where: { profileId: parent.id },
+        orderBy: { name: 'asc' }
+      });
+    },
+    achievements: async (parent) => {
+      if (parent.achievements) return parent.achievements;
+      return await prisma.achievement.findMany({
+        where: { profileId: parent.id },
+        orderBy: { issueDate: 'desc' }
+      });
+    },
+  },
+
   Post: {
     user: async (parent) => {
       if (parent.user) return parent.user;

@@ -72,6 +72,145 @@ const baseTypeDefs = gql`
     qrCode: String
     createdAt: String!
     updatedAt: String!
+    experiences: [Experience!]!
+    education: [Education!]!
+    skillsList: [Skill!]!
+    achievements: [Achievement!]!
+  }
+
+  # ==================== PROFILE SECTIONS ====================
+
+  type Experience {
+    id: ID!
+    profileId: String!
+    title: String!
+    company: String!
+    location: String
+    employmentType: String
+    startDate: String!
+    endDate: String
+    isCurrentJob: Boolean!
+    description: String
+    createdAt: String!
+    updatedAt: String!
+  }
+
+  type Education {
+    id: ID!
+    profileId: String!
+    institution: String!
+    degree: String!
+    fieldOfStudy: String!
+    startDate: String!
+    endDate: String
+    isCurrentStudy: Boolean!
+    grade: String
+    activities: String
+    description: String
+    createdAt: String!
+    updatedAt: String!
+  }
+
+  type Skill {
+    id: ID!
+    profileId: String!
+    name: String!
+    level: String
+    yearsOfExperience: Int
+    endorsements: Int!
+    createdAt: String!
+  }
+
+  type Achievement {
+    id: ID!
+    profileId: String!
+    title: String!
+    issuer: String!
+    issueDate: String!
+    expiryDate: String
+    credentialId: String
+    credentialUrl: String
+    description: String
+    createdAt: String!
+    updatedAt: String!
+  }
+
+  input CreateExperienceInput {
+    title: String!
+    company: String!
+    location: String
+    employmentType: String
+    startDate: String!
+    endDate: String
+    isCurrentJob: Boolean
+    description: String
+  }
+
+  input UpdateExperienceInput {
+    title: String
+    company: String
+    location: String
+    employmentType: String
+    startDate: String
+    endDate: String
+    isCurrentJob: Boolean
+    description: String
+  }
+
+  input CreateEducationInput {
+    institution: String!
+    degree: String!
+    fieldOfStudy: String!
+    startDate: String!
+    endDate: String
+    isCurrentStudy: Boolean
+    grade: String
+    activities: String
+    description: String
+  }
+
+  input UpdateEducationInput {
+    institution: String
+    degree: String
+    fieldOfStudy: String
+    startDate: String
+    endDate: String
+    isCurrentStudy: Boolean
+    grade: String
+    activities: String
+    description: String
+  }
+
+  input CreateSkillInput {
+    name: String!
+    level: String
+    yearsOfExperience: Int
+  }
+
+  input UpdateSkillInput {
+    name: String
+    level: String
+    yearsOfExperience: Int
+  }
+
+  input CreateAchievementInput {
+    title: String!
+    issuer: String!
+    issueDate: String!
+    expiryDate: String
+    credentialId: String
+    credentialUrl: String
+    description: String
+  }
+
+  input UpdateAchievementInput {
+    title: String
+    issuer: String
+    issueDate: String
+    expiryDate: String
+    credentialId: String
+    credentialUrl: String
+    description: String
   }
 
   type AuthPayload {
@@ -262,6 +401,26 @@ const baseTypeDefs = gql`
     # Profile
     updateProfile(input: UpdateProfileInput!): Profile!
     generateAlumniCard: Profile!
+
+    # Experience
+    addExperience(input: CreateExperienceInput!): Experience!
+    updateExperience(id: ID!, input: UpdateExperienceInput!): Experience!
+    deleteExperience(id: ID!): MessageResponse!
+
+    # Education
+    addEducation(input: CreateEducationInput!): Education!
+    updateEducation(id: ID!, input: UpdateEducationInput!): Education!
+    deleteEducation(id: ID!): MessageResponse!
+
+    # Skills
+    addSkill(input: CreateSkillInput!): Skill!
+    updateSkill(id: ID!, input: UpdateSkillInput!): Skill!
+    deleteSkill(id: ID!): MessageResponse!
+
+    # Achievements
+    addAchievement(input: CreateAchievementInput!): Achievement!
+    updateAchievement(id: ID!, input: UpdateAchievementInput!): Achievement!
+    deleteAchievement(id: ID!): MessageResponse!
 
     # Forum - Posts
     createPost(input: CreatePostInput!): Post!

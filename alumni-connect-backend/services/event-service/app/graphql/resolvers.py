@@ -303,6 +303,20 @@ class Mutation:
             raise Exception("Not authenticated")
         
         try:
+            # Handle speakers field - convert to JSON string if it's not already
+            import json
+            speakers_json = input.speakers
+            if speakers_json and not isinstance(speakers_json, str):
+                # If it's a list or dict, stringify it
+                speakers_json = json.dumps(speakers_json)
+            elif speakers_json and isinstance(speakers_json, str):
+                # If it's a string, validate it's valid JSON
+                try:
+                    json.loads(speakers_json)  # Just to validate
+                except json.JSONDecodeError:
+                    # If it's not valid JSON, wrap it as a JSON string
+                    speakers_json = json.dumps(speakers_json)
+            
             event = EventModel(
                 organizerId=user['userId'],
                 title=input.title,
@@ -319,7 +333,7 @@ class Mutation:
                 tags=input.tags or [],
                 requirements=input.requirements,
                 agenda=input.agenda,
-                speakers=input.speakers,
+                speakers=speakers_json,
                 status='PENDING_APPROVAL'  # Events need admin approval
             )
             

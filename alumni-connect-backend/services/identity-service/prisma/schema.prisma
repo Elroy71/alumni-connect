@@ -140,8 +140,93 @@ model Profile {
   
   // Relations
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  experiences Experience[]
+  education   Education[]
+  skillsList  Skill[]
+  achievements Achievement[]
   
   @@map("profiles")
+  @@schema("identity_schema")
+}
+
+// ==================== PROFILE EXTENSION MODELS ====================
+
+model Experience {
+  id              String    @id @default(uuid())
+  profileId       String
+  title           String
+  company         String
+  location        String?
+  employmentType  String?
+  startDate       DateTime
+  endDate         DateTime?
+  isCurrentJob    Boolean   @default(false)
+  description     String?   @db.Text
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  profile         Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  
+  @@index([profileId])
+  @@map("experiences")
+  @@schema("identity_schema")
+}
+
+model Education {
+  id              String    @id @default(uuid())
+  profileId       String
+  institution     String
+  degree          String
+  fieldOfStudy    String
+  startDate       DateTime
+  endDate         DateTime?
+  isCurrentStudy  Boolean   @default(false)
+  grade           String?
+  activities      String?   @db.Text
+  description     String?   @db.Text
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  profile         Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  
+  @@index([profileId])
+  @@map("education")
+  @@schema("identity_schema")
+}
+
+model Skill {
+  id                String    @id @default(uuid())
+  profileId         String
+  name              String
+  level             String?
+  yearsOfExperience Int?
+  endorsements      Int       @default(0)
+  createdAt         DateTime  @default(now())
+  
+  profile           Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  
+  @@index([profileId])
+  @@map("skills")
+  @@schema("identity_schema")
+}
+
+model Achievement {
+  id              String    @id @default(uuid())
+  profileId       String
+  title           String
+  issuer          String
+  issueDate       DateTime
+  expiryDate      DateTime?
+  credentialId    String?
+  credentialUrl   String?
+  description     String?   @db.Text
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  profile         Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  
+  @@index([profileId])
+  @@map("achievements")
   @@schema("identity_schema")
 }
 

@@ -35,6 +35,53 @@ export const MY_PROFILE_QUERY = gql`
       qrCode
       createdAt
       updatedAt
+      experiences {
+        id
+        title
+        company
+        location
+        employmentType
+        startDate
+        endDate
+        isCurrentJob
+        description
+        createdAt
+        updatedAt
+      }
+      education {
+        id
+        institution
+        degree
+        fieldOfStudy
+        startDate
+        endDate
+        isCurrentStudy
+        grade
+        activities
+        description
+        createdAt
+        updatedAt
+      }
+      skillsList {
+        id
+        name
+        level
+        yearsOfExperience
+        endorsements
+        createdAt
+      }
+      achievements {
+        id
+        title
+        issuer
+        issueDate
+        expiryDate
+        credentialId
+        credentialUrl
+        description
+        createdAt
+        updatedAt
+      }
     }
   }
 `;
