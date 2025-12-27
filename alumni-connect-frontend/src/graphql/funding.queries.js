@@ -1,40 +1,22 @@
 import { gql } from '@apollo/client';
 
 export const GET_CAMPAIGNS = gql`
-  query GetCampaigns($filter: CampaignFilterInput) {
-    campaigns(filter: $filter) {
-      campaigns {
-        id
-        title
-        description
-        coverImage
-        category
-        goalAmount
-        currentAmount
-        currency
-        startDate
-        endDate
-        status
-        viewCount
-        createdAt
-        creator {
-          id
-          profile {
-            fullName
-            avatar
-          }
-        }
-        donationsCount
-        percentage
-        daysLeft
-        hasDonated
-      }
-      pagination {
-        total
-        limit
-        offset
-        hasMore
-      }
+  query GetCampaigns($status: CampaignStatus, $category: CampaignCategory, $search: String) {
+    campaigns(status: $status, category: $category, search: $search) {
+      id
+      userId
+      title
+      description
+      targetAmount
+      currentAmount
+      progress
+      startDate
+      endDate
+      category
+      status
+      imageUrl
+      createdAt
+      updatedAt
     }
   }
 `;
@@ -43,80 +25,106 @@ export const GET_CAMPAIGN = gql`
   query GetCampaign($id: ID!) {
     campaign(id: $id) {
       id
+      userId
       title
       description
-      story
-      coverImage
-      category
-      goalAmount
+      targetAmount
       currentAmount
-      currency
+      progress
       startDate
       endDate
+      category
       status
-      beneficiary
-      bankAccount
-      phoneNumber
-      updates
-      viewCount
+      imageUrl
       createdAt
       updatedAt
-      creator {
+      donations {
         id
-        email
-        profile {
-          fullName
-          avatar
-          currentPosition
-          currentCompany
-          phone
-        }
+        donorId
+        amount
+        message
+        paymentStatus
+        donatedAt
       }
-      donationsCount
-      percentage
-      daysLeft
-      hasDonated
+      updates {
+        id
+        title
+        content
+        createdAt
+      }
     }
   }
 `;
 
-export const GET_PUBLIC_DONATIONS = gql`
-  query GetPublicDonations($campaignId: ID!) {
-    publicDonations(campaignId: $campaignId) {
+export const GET_MY_CAMPAIGNS = gql`
+  query GetMyCampaigns {
+    myCampaigns {
       id
-      amount
-      currency
-      message
-      donatedAt
-      donor {
-        profile {
-          fullName
-          avatar
-        }
+      title
+      description
+      targetAmount
+      currentAmount
+      progress
+      category
+      status
+      imageUrl
+      createdAt
+      donations {
+        id
+        amount
       }
     }
   }
 `;
 
 export const GET_MY_DONATIONS = gql`
-  query GetMyDonations($status: String) {
-    myDonations(status: $status) {
+  query GetMyDonations  {
+    myDonations {
       id
+      campaignId
       amount
-      currency
       message
-      status
+      paymentStatus
       donatedAt
       campaign {
         id
         title
-        coverImage
-        creator {
-          profile {
-            fullName
-          }
-        }
+        imageUrl
       }
+    }
+  }
+`;
+
+export const GET_CAMPAIGN_DONATIONS = gql`
+  query GetCampaignDonations($campaignId: ID!) {
+    campaignDonations(campaignId: $campaignId) {
+      id
+      donorId
+      amount
+      message
+      paymentStatus
+      donatedAt
+    }
+  }
+`;
+
+export const GET_PENDING_CAMPAIGNS = gql`
+  query GetPendingCampaigns {
+    pendingCampaigns {
+      id
+      userId
+      title
+      description
+      targetAmount
+      currentAmount
+      progress
+      startDate
+      endDate
+      category
+      status
+      imageUrl
+      createdAt
+      updatedAt
     }
   }
 `;

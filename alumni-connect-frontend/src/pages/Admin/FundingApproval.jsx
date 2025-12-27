@@ -1,149 +1,148 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client';
-import { GET_PENDING_CAMPAIGNS, APPROVE_CAMPAIGN, REJECT_CAMPAIGN } from '../../graphql/admin';
+import { GET_PENDING_CAMPAIGNS } from '../../graphql/funding.queries';
+import { APPROVE_CAMPAIGN, REJECT_CAMPAIGN } from '../../graphql/funding.mutations';
 import { DollarSign, User, Calendar, Target, Check, X } from 'lucide-react';
 
 const FundingApproval = () => {
-    const [selectedCampaign, setSelectedCampaign] = useState(null);
-    const [rejectReason, setRejectReason] = useState('');
-    const [showRejectModal, setShowRejectModal] = useState(false);
+  const [selectedCampaign, setSelectedCampaign] = useState(null);
+  const [rejectReason, setRejectReason] = useState('');
+  const [showRejectModal, setShowRejectModal] = useState(false);
 
-    const { data, loading, refetch } = useQuery(GET_PENDING_CAMPAIGNS, {
-        variables: { pagination: { skip: 0, take: 20 } }
+  const { data, loading, refetch } = useQuery(GET_PENDING_CAMPAIGNS);
+
+  const [approveCampaign] = useMutation(APPROVE_CAMPAIGN, {
+    onCompleted: () => {
+      refetch();
+      alert('Campaign berhasil disetujui!');
+    }
+  });
+
+  const [rejectCampaign] = useMutation(REJECT_CAMPAIGN, {
+    onCompleted: () => {
+      refetch();
+      setShowRejectModal(false);
+      setRejectReason('');
+      alert('Campaign ditolak');
+    }
+  });
+
+  const handleApprove = (id) => {
+    if (confirm('Setujui campaign ini?')) {
+      approveCampaign({ variables: { id } });
+    }
+  };
+
+  const handleReject = (campaign) => {
+    setSelectedCampaign(campaign);
+    setShowRejectModal(true);
+  };
+
+  const submitReject = () => {
+    if (!rejectReason.trim()) {
+      alert('Mohon berikan alasan penolakan');
+      return;
+    }
+    rejectCampaign({
+      variables: {
+        id: selectedCampaign.id,
+        reason: rejectReason
+      }
     });
+  };
 
-    const [approveCampaign] = useMutation(APPROVE_CAMPAIGN, {
-        onCompleted: () => {
-            refetch();
-            alert('Campaign berhasil disetujui!');
-        }
-    });
+  if (loading) return <div>Memuat...</div>;
 
-    const [rejectCampaign] = useMutation(REJECT_CAMPAIGN, {
-        onCompleted: () => {
-            refetch();
-            setShowRejectModal(false);
-            setRejectReason('');
-            alert('Campaign ditolak');
-        }
-    });
+  const campaigns = data?.pendingCampaigns || [];
 
-    const handleApprove = (campaignId) => {
-        if (confirm('Setujui campaign ini?')) {
-            approveCampaign({ variables: { campaignId } });
-        }
-    };
+  return (
+    <div className="funding-approval">
+      <div className="page-header">
+        <h1>Funding Approval</h1>
+        <p className="page-subtitle">{campaigns.length} campaign menunggu persetujuan</p>
+      </div>
 
-    const handleReject = (campaign) => {
-        setSelectedCampaign(campaign);
-        setShowRejectModal(true);
-    };
-
-    const submitReject = () => {
-        if (!rejectReason.trim()) {
-            alert('Mohon berikan alasan penolakan');
-            return;
-        }
-        rejectCampaign({
-            variables: {
-                campaignId: selectedCampaign.id,
-                reason: rejectReason
-            }
-        });
-    };
-
-    if (loading) return <div>Memuat...</div>;
-
-    const campaigns = data?.getPendingCampaigns?.campaigns || [];
-
-    return (
-        <div className="funding-approval">
-            <div className="page-header">
-                <h1>Funding Approval</h1>
-                <p className="page-subtitle">{campaigns.length} campaign menunggu persetujuan</p>
-            </div>
-
-            <div className="campaigns-grid">
-                {campaigns.length === 0 ? (
-                    <div className="empty-state">
-                        <DollarSign size={64} strokeWidth={1} />
-                        <h3>Tidak ada campaign pending</h3>
-                        <p>Semua campaign telah direview</p>
-                    </div>
-                ) : (
-                    campaigns.map((campaign) => (
-                        <div key={campaign.id} className="campaign-card">
-                            {campaign.coverImage && (
-                                <div className="campaign-image">
-                                    <img src={campaign.coverImage} alt={campaign.title} />
-                                    <div className="campaign-badge">PENDING</div>
-                                </div>
-                            )}
-
-                            <div className="campaign-content">
-                                <div className="campaign-category">{campaign.category}</div>
-                                <h3 className="campaign-title">{campaign.title}</h3>
-
-                                <div className="campaign-meta">
-                                    <div className="meta-item">
-                                        <User size={16} />
-                                        <span>{campaign.creator?.profile?.fullName || 'Unknown'}</span>
-                                    </div>
-                                    <div className="meta-item">
-                                        <Target size={16} />
-                                        <span>Target: Rp {campaign.goalAmount?.toLocaleString('id-ID')}</span>
-                                    </div>
-                                    <div className="meta-item">
-                                        <Calendar size={16} />
-                                        <span>Deadline: {new Date(campaign.endDate).toLocaleDateString('id-ID')}</span>
-                                    </div>
-                                </div>
-
-                                <p className="campaign-description">{campaign.description}</p>
-
-                                <div className="campaign-actions">
-                                    <button
-                                        className="btn-approve"
-                                        onClick={() => handleApprove(campaign.id)}
-                                    >
-                                        <Check size={18} />
-                                        Setujui
-                                    </button>
-                                    <button
-                                        className="btn-reject"
-                                        onClick={() => handleReject(campaign)}
-                                    >
-                                        <X size={18} />
-                                        Tolak
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    ))
-                )}
-            </div>
-
-            {showRejectModal && (
-                <div className="modal-overlay" onClick={() => setShowRejectModal(false)}>
-                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                        <h3>Tolak Campaign</h3>
-                        <p>Campaign: {selectedCampaign?.title}</p>
-                        <textarea
-                            className="reject-reason"
-                            placeholder="Alasan penolakan..."
-                            value={rejectReason}
-                            onChange={(e) => setRejectReason(e.target.value)}
-                            rows={4}
-                        />
-                        <div className="modal-actions">
-                            <button onClick={() => setShowRejectModal(false)} className="btn-cancel">Batal</button>
-                            <button onClick={submitReject} className="btn-submit">Tolak Campaign</button>
-                        </div>
-                    </div>
+      <div className="campaigns-grid">
+        {campaigns.length === 0 ? (
+          <div className="empty-state">
+            <DollarSign size={64} strokeWidth={1} />
+            <h3>Tidak ada campaign pending</h3>
+            <p>Semua campaign telah direview</p>
+          </div>
+        ) : (
+          campaigns.map((campaign) => (
+            <div key={campaign.id} className="campaign-card">
+              {campaign.imageUrl && (
+                <div className="campaign-image">
+                  <img src={campaign.imageUrl} alt={campaign.title} />
+                  <div className="campaign-badge">PENDING</div>
                 </div>
-            )}
+              )}
 
-            <style jsx>{`
+              <div className="campaign-content">
+                <div className="campaign-category">{campaign.category}</div>
+                <h3 className="campaign-title">{campaign.title}</h3>
+
+                <div className="campaign-meta">
+                  <div className="meta-item">
+                    <User size={16} />
+                    <span>{campaign.userId}</span>
+                  </div>
+                  <div className="meta-item">
+                    <Target size={16} />
+                    <span>Target: Rp {campaign.targetAmount?.toLocaleString('id-ID')}</span>
+                  </div>
+                  <div className="meta-item">
+                    <Calendar size={16} />
+                    <span>Deadline: {new Date(campaign.endDate).toLocaleDateString('id-ID')}</span>
+                  </div>
+                </div>
+
+                <p className="campaign-description">{campaign.description}</p>
+
+                <div className="campaign-actions">
+                  <button
+                    className="btn-approve"
+                    onClick={() => handleApprove(campaign.id)}
+                  >
+                    <Check size={18} />
+                    Setujui
+                  </button>
+                  <button
+                    className="btn-reject"
+                    onClick={() => handleReject(campaign)}
+                  >
+                    <X size={18} />
+                    Tolak
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {showRejectModal && (
+        <div className="modal-overlay" onClick={() => setShowRejectModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3>Tolak Campaign</h3>
+            <p>Campaign: {selectedCampaign?.title}</p>
+            <textarea
+              className="reject-reason"
+              placeholder="Alasan penolakan..."
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              rows={4}
+            />
+            <div className="modal-actions">
+              <button onClick={() => setShowRejectModal(false)} className="btn-cancel">Batal</button>
+              <button onClick={submitReject} className="btn-submit">Tolak Campaign</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style jsx>{`
         .funding-approval {
           max-width: 1400px;
         }
@@ -354,8 +353,8 @@ const FundingApproval = () => {
           color: white;
         }
       `}</style>
-        </div>
-    );
+    </div>
+  );
 };
 
 export default FundingApproval;

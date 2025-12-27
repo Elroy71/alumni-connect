@@ -65,7 +65,22 @@ uvicorn app.main:app --reload --port 4002
 
 ---
 
-### Terminal 3: API Gateway (Port 4000)
+### Terminal 3: Funding Service (Port 4003)
+
+```bash
+cd "d:\S1 Sistem Informasi - Ekstensi\Semester 1\Intergrasi Aplikasi Enterprise\Tubes_Uas\AlumniConnect\alumni-connect-backend\services\funding-service"
+
+php artisan serve --port=4003
+```
+
+**Status:** ✅ Running ketika muncul pesan `Laravel development server started on http://127.0.0.1:4003`
+
+> [!NOTE]
+> Pastikan sudah menjalankan `composer install` dan `php artisan migrate` sebelumnya.
+
+---
+
+### Terminal 4: API Gateway (Port 4000)
 
 ```bash
 cd "d:\S1 Sistem Informasi - Ekstensi\Semester 1\Intergrasi Aplikasi Enterprise\Tubes_Uas\AlumniConnect\alumni-connect-backend\services\api-gateway"
@@ -76,11 +91,11 @@ npm run dev
 **Status:** ✅ Running ketika muncul pesan `🚀 Gateway ready at http://localhost:4000/graphql`
 
 > [!IMPORTANT]
-> **API Gateway harus dijalankan SETELAH Identity Service dan Event Service sudah running!**
+> **API Gateway harus dijalankan SETELAH semua service (Identity, Event, Funding) sudah running!**
 
 ---
 
-### Terminal 4: Frontend (Port 5173)
+### Terminal 5: Frontend (Port 5173)
 
 ```bash
 cd "d:\S1 Sistem Informasi - Ekstensi\Semester 1\Intergrasi Aplikasi Enterprise\Tubes_Uas\AlumniConnect\alumni-connect-frontend"
@@ -104,6 +119,7 @@ npm run dev
 |------------------|------|----------------|-----------------|
 | Identity Service | 4001 | Node.js        | `npm run dev`   |
 | Event Service    | 4002 | Python FastAPI | `uvicorn app.main:app --reload --port 4002` |
+| Funding Service  | 4003 | PHP Laravel    | `php artisan serve --port=4003` |
 | API Gateway      | 4000 | Apollo Gateway | `npm run dev`   |
 | Frontend         | 5173 | React + Vite   | `npm run dev`   |
 
@@ -113,8 +129,9 @@ npm run dev
 
 1. **Pertama:** Identity Service (Terminal 1)
 2. **Kedua:** Event Service (Terminal 2)
-3. **Ketiga:** API Gateway (Terminal 3) - *tunggu service 1 & 2 ready*
-4. **Keempat:** Frontend (Terminal 4)
+3. **Ketiga:** Funding Service (Terminal 3)
+4. **Keempat:** API Gateway (Terminal 4) - *tunggu service 1, 2, 3 ready*
+5. **Kelima:** Frontend (Terminal 5)
 
 ---
 
@@ -166,10 +183,16 @@ cd "d:\S1 Sistem Informasi - Ekstensi\Semester 1\Intergrasi Aplikasi Enterprise\
 
 **Terminal 3:**
 ```bash
-cd "d:\S1 Sistem Informasi - Ekstensi\Semester 1\Intergrasi Aplikasi Enterprise\Tubes_Uas\AlumniConnect\alumni-connect-backend\services\api-gateway" && npm run dev
+cd "d:\S1 Sistem Informasi - Ekstensi\Semester 1\Intergrasi Aplikasi Enterprise\Tubes_Uas\AlumniConnect\alumni-connect-backend\services\funding-service" && php artisan serve --port=4003
 ```
 
 **Terminal 4:**
 ```bash
+cd "d:\S1 Sistem Informasi - Ekstensi\Semester 1\Intergrasi Aplikasi Enterprise\Tubes_Uas\AlumniConnect\alumni-connect-backend\services\api-gateway" && npm run dev
+```
+
+**Terminal 5:**
+```bash
 cd "d:\S1 Sistem Informasi - Ekstensi\Semester 1\Intergrasi Aplikasi Enterprise\Tubes_Uas\AlumniConnect\alumni-connect-frontend" && npm run dev
+```
 ```

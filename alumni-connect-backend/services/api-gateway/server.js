@@ -7,6 +7,7 @@ dotenv.config();
 const PORT = process.env.PORT || 4000;
 const NODE_SERVICE_URL = process.env.NODE_SERVICE_URL || 'http://localhost:4001/graphql';
 const PYTHON_SERVICE_URL = process.env.PYTHON_SERVICE_URL || 'http://localhost:4002/graphql';
+const PHP_SERVICE_URL = process.env.PHP_SERVICE_URL || 'http://localhost:4003/graphql';
 
 const app = express();
 
@@ -20,6 +21,7 @@ console.log('\n🔍 Gateway Configuration:');
 console.log('   Port:', PORT);
 console.log('   Node Service:', NODE_SERVICE_URL);
 console.log('   Python Service:', PYTHON_SERVICE_URL);
+console.log('   PHP Service:', PHP_SERVICE_URL);
 console.log('');
 
 // Health check
@@ -49,6 +51,15 @@ app.get('/health', async (req, res) => {
     health.subgraphs['event-service'] = 'unreachable';
   }
 
+  // Check PHP service
+  try {
+    const phpHealthUrl = PHP_SERVICE_URL.replace('/graphql', '');
+    const phpResponse = await fetch(phpHealthUrl);
+    health.subgraphs['funding-service'] = phpResponse.ok ? 'healthy' : 'unhealthy';
+  } catch (error) {
+    health.subgraphs['funding-service'] = 'unreachable';
+  }
+
   res.json(health);
 });
 
@@ -56,11 +67,11 @@ app.get('/health', async (req, res) => {
 // GraphQL proxy endpoint
 app.post('/graphql', async (req, res) => {
   const { query, variables, operationName } = req.body;
-  
+
   // Get authorization header (try both cases)
-  const authorization = 
-    req.headers.authorization || 
-    req.headers.Authorization || 
+  const authorization =
+    req.headers.authorization ||
+    req.headers.Authorization ||
     '';
 
   console.log('\n📨 ===== GATEWAY REQUEST =====');
@@ -70,7 +81,7 @@ app.post('/graphql', async (req, res) => {
 
   // Determine which service to route to
   const queryString = query || '';
-  const isEventQuery = 
+  const isEventQuery =
     queryString.includes('createEvent') ||
     queryString.includes('updateEvent') ||
     queryString.includes('deleteEvent') ||
@@ -80,8 +91,27 @@ app.post('/graphql', async (req, res) => {
     queryString.includes('cancelRegistration') ||
     queryString.includes('myRegistrations');
 
-  const targetUrl = isEventQuery ? PYTHON_SERVICE_URL : NODE_SERVICE_URL;
-  const serviceName = isEventQuery ? 'Python Event Service' : 'Node.js Identity Service';
+  const isFundingQuery =
+    queryString.includes('campaign') ||
+    queryString.includes('Campaign') ||
+    queryString.includes('donation') ||
+    queryString.includes('Donation') ||
+    queryString.includes('myCampaigns') ||
+    queryString.includes('myDonations') ||
+    queryString.includes('donateToCampaign') ||
+    queryString.includes('addCampaignUpdate');
+
+  let targetUrl, serviceName;
+  if (isFundingQuery) {
+    targetUrl = PHP_SERVICE_URL;
+    serviceName = 'PHP Funding Service';
+  } else if (isEventQuery) {
+    targetUrl = PYTHON_SERVICE_URL;
+    serviceName = 'Python Event Service';
+  } else {
+    targetUrl = NODE_SERVICE_URL;
+    serviceName = 'Node.js Identity Service';
+  }
 
   console.log('Routing to:', serviceName);
   console.log('Target URL:', targetUrl);
@@ -97,7 +127,7 @@ app.post('/graphql', async (req, res) => {
     });
 
     const data = await response.json();
-    
+
     if (data.errors) {
       console.error('❌ Errors from', serviceName);
       data.errors.forEach(err => {

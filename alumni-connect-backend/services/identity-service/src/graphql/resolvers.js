@@ -3,7 +3,6 @@ import AuthService from '../modules/auth/auth.service.js';
 import ProfileService from '../modules/profile/profile.service.js';
 import ForumService from '../modules/forum/forum.service.js';
 import JobService from '../modules/job/job.service.js';
-import FundingService from '../modules/funding/funding.service.js';
 import { adminResolvers } from '../modules/admin/admin.resolver.js';
 
 const resolvers = {
@@ -122,28 +121,7 @@ const resolvers = {
       return await JobService.getCompanyById(id);
     },
 
-    // ==================== FUNDING QUERIES ====================
-    campaigns: async (_, { filter }) => {
-      return await FundingService.getCampaigns(filter);
-    },
 
-    campaign: async (_, { id }, context) => {
-      return await FundingService.getCampaignById(id, context.user);
-    },
-
-    myCampaigns: async (_, __, context) => {
-      if (!context.user) throw new Error('Not authenticated');
-      return await FundingService.getMyCampaigns(context.user.userId);
-    },
-
-    myDonations: async (_, { status }, context) => {
-      if (!context.user) throw new Error('Not authenticated');
-      return await FundingService.getMyDonations(context.user.userId, status);
-    },
-
-    publicDonations: async (_, { campaignId }) => {
-      return await FundingService.getPublicDonations(campaignId);
-    },
   },
 
   Mutation: {
@@ -487,31 +465,7 @@ const resolvers = {
       return await JobService.createCompany(input);
     },
 
-    // ==================== FUNDING MUTATIONS ====================
-    createCampaign: async (_, { input }, context) => {
-      if (!context.user) throw new Error('Not authenticated');
-      return await FundingService.createCampaign(context.user.userId, input);
-    },
 
-    updateCampaign: async (_, { id, input }, context) => {
-      if (!context.user) throw new Error('Not authenticated');
-      return await FundingService.updateCampaign(id, context.user.userId, input);
-    },
-
-    deleteCampaign: async (_, { id }, context) => {
-      if (!context.user) throw new Error('Not authenticated');
-      return await FundingService.deleteCampaign(id, context.user.userId);
-    },
-
-    createDonation: async (_, { campaignId, input }, context) => {
-      if (!context.user) throw new Error('Not authenticated');
-      return await FundingService.createDonation(campaignId, context.user.userId, input);
-    },
-
-    verifyDonation: async (_, { donationId, status }, context) => {
-      if (!context.user) throw new Error('Not authenticated');
-      return await FundingService.verifyDonation(donationId, context.user.userId, status);
-    },
   },
 
   // Type Resolvers
@@ -730,28 +684,7 @@ const resolvers = {
     },
   },
 
-  Campaign: {
-    creator: async (parent) => {
-      return await prisma.user.findUnique({
-        where: { id: parent.creatorId },
-        include: { profile: true }
-      });
-    },
-  },
 
-  Donation: {
-    campaign: async (parent) => {
-      return await prisma.campaign.findUnique({
-        where: { id: parent.campaignId }
-      });
-    },
-    donor: async (parent) => {
-      return await prisma.user.findUnique({
-        where: { id: parent.donorId },
-        include: { profile: true }
-      });
-    },
-  },
 };
 
 export default resolvers;

@@ -1,0 +1,159 @@
+"A datetime string with format `Y-m-d H:i:s`, e.g. `2018-05-23 13:43:32`."
+scalar DateTime @scalar(class: "Nuwave\\Lighthouse\\Schema\\Types\\Scalars\\DateTime")
+
+"Indicates any calendar date `Y-m-d`, e.g. `2020-04-20`."
+scalar Date @scalar(class: "Nuwave\\Lighthouse\\Schema\\Types\\Scalars\\Date")
+
+type Query {
+    campaigns(
+        status: CampaignStatus
+        category: CampaignCategory
+        search: String
+    ): [Campaign!]! @field(resolver: "App\\GraphQL\\Queries\\CampaignQueries@campaigns")
+    
+    campaign(id: ID! @eq): Campaign @find
+    
+    myCampaigns: [Campaign!]! @field(resolver: "App\\GraphQL\\Queries\\CampaignQueries@myCampaigns") @guard
+    
+    myDonations: [Donation!]! @field(resolver: "App\\GraphQL\\Queries\\DonationQueries@myDonations") @guard
+    
+    campaignDonations(campaignId: ID!): [Donation!]! @field(resolver: "App\\GraphQL\\Queries\\DonationQueries@campaignDonations")
+    
+    # Admin queries
+    pendingCampaigns: [Campaign!]! @field(resolver: "App\\GraphQL\\Queries\\AdminQueries@pendingCampaigns") @guard
+}
+
+type Mutation {
+    createCampaign(input: CreateCampaignInput! @spread): Campaign!
+        @field(resolver: "App\\GraphQL\\Mutations\\CampaignMutations@create")
+        @guard
+    
+    updateCampaign(id: ID!, input: UpdateCampaignInput! @spread): Campaign!
+        @field(resolver: "App\\GraphQL\\Mutations\\CampaignMutations@update")
+        @guard
+    
+    deleteCampaign(id: ID!): Boolean!
+        @field(resolver: "App\\GraphQL\\Mutations\\CampaignMutations@delete")
+        @guard
+    
+    donateToCampaign(input: DonationInput! @spread): Donation!
+        @field(resolver: "App\\GraphQL\\Mutations\\DonationMutations@donate")
+        @guard
+    
+    addCampaignUpdate(input: CampaignUpdateInput! @spread): CampaignUpdate!
+        @field(resolver: "App\\GraphQL\\Mutations\\CampaignMutations@addUpdate")
+        @guard
+    
+    # Admin mutations
+    approveCampaign(id: ID!): Campaign!
+        @field(resolver: "App\\GraphQL\\Mutations\\AdminMutations@approveCampaign")
+        @guard
+    
+    rejectCampaign(id: ID!, reason: String!): Campaign!
+        @field(resolver: "App\\GraphQL\\Mutations\\AdminMutations@rejectCampaign")
+        @guard
+}
+
+type Campaign {
+    id: ID!
+    userId: String!
+    title: String!
+    description: String
+    targetAmount: Float!
+    currentAmount: Float!
+    startDate: Date
+    endDate: Date
+    category: CampaignCategory!
+    status: CampaignStatus!
+    imageUrl: String
+    createdAt: DateTime!
+    updatedAt: DateTime!
+    donations: [Donation!]! @hasMany
+    updates: [CampaignUpdate!]! @hasMany
+    progress: Float!
+    
+    # Approval fields
+    approvedBy: String
+    approvedAt: DateTime
+    rejectedBy: String
+    rejectedAt: DateTime
+    rejectionReason: String
+}
+
+type Donation {
+    id: ID!
+    campaignId: ID!
+    campaign: Campaign! @belongsTo
+    donorId: String!
+    amount: Float!
+    message: String
+    paymentStatus: PaymentStatus!
+    paymentMethod: String
+    transactionId: String
+    donatedAt: DateTime!
+}
+
+type CampaignUpdate {
+    id: ID!
+    campaignId: ID!
+    campaign: Campaign! @belongsTo
+    title: String!
+    content: String!
+    createdAt: DateTime!
+}
+
+enum CampaignCategory {
+    SCHOLARSHIP @enum(value: "scholarship")
+    RESEARCH @enum(value: "research")
+    EVENT @enum(value: "event")
+    INFRASTRUCTURE @enum(value: "infrastructure")
+}
+
+enum CampaignStatus {
+    DRAFT @enum(value: "draft")
+    PENDING_APPROVAL @enum(value: "pending_approval")
+    ACTIVE @enum(value: "active")
+    COMPLETED @enum(value: "completed")
+    CANCELLED @enum(value: "cancelled")
+    REJECTED @enum(value: "rejected")
+}
+
+enum PaymentStatus {
+    PENDING @enum(value: "pending")
+    SUCCESS @enum(value: "success")
+    FAILED @enum(value: "failed")
+}
+
+input CreateCampaignInput {
+    title: String! @rules(apply: ["required", "min:5", "max:255"])
+    description: String @rules(apply: ["max:5000"])
+    targetAmount: Float! @rules(apply: ["required", "min:1"])
+    startDate: Date
+    endDate: Date
+    category: CampaignCategory! @rules(apply: ["required"])
+    imageUrl: String
+}
+
+input UpdateCampaignInput {
+    title: String @rules(apply: ["min:5", "max:255"])
+    description: String @rules(apply: ["max:5000"])
+    targetAmount: Float @rules(apply: ["min:1"])
+    startDate: Date
+    endDate: Date
+    category: CampaignCategory
+    status: CampaignStatus
+    imageUrl: String
+}
+
+input DonationInput {
+    campaignId: ID! @rules(apply: ["required", "exists:campaigns,id"])
+    amount: Float! @rules(apply: ["required", "min:1"])
+    message: String @rules(apply: ["max:1000"])
+    paymentMethod: String
+}
+
+input CampaignUpdateInput {
+    campaignId: ID! @rules(apply: ["required", "exists:campaigns,id"])
+    title: String! @rules(apply: ["required", "min:3", "max:255"])
+    content: String! @rules(apply: ["required", "max:5000"])
+}
