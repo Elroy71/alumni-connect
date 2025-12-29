@@ -86,6 +86,55 @@ export const MY_PROFILE_QUERY = gql`
   }
 `;
 
+export const PUBLIC_PROFILE_QUERY = gql`
+  query PublicProfile($cardNumber: String!) {
+    publicProfile(cardNumber: $cardNumber) {
+      id
+      fullName
+      nim
+      batch
+      major
+      graduationYear
+      avatar
+      coverImage
+      currentCompany
+      currentPosition
+      bio
+      linkedinUrl
+      githubUrl
+      portfolioUrl
+      skillsList {
+        id
+        name
+        level
+      }
+      experiences {
+        id
+        title
+        company
+        startDate
+        endDate
+        isCurrentJob
+      }
+      education {
+        id
+        institution
+        degree
+        fieldOfStudy
+        startDate
+        endDate
+        isCurrentStudy
+      }
+      achievements {
+        id
+        title
+        issuer
+        issueDate
+      }
+    }
+  }
+`;
+
 export const GET_PROFILE_QUERY = gql`
   query GetProfile($userId: ID!) {
     profile(userId: $userId) {

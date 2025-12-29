@@ -26,6 +26,42 @@ const resolvers = {
       return await ProfileService.getProfile(userId);
     },
 
+    publicProfile: async (_, { cardNumber }) => {
+      const profile = await prisma.profile.findUnique({
+        where: { cardNumber },
+        include: {
+          experiences: {
+            orderBy: [
+              { isCurrentJob: 'desc' },
+              { startDate: 'desc' }
+            ],
+            take: 5
+          },
+          education: {
+            orderBy: [
+              { isCurrentStudy: 'desc' },
+              { startDate: 'desc' }
+            ],
+            take: 3
+          },
+          skillsList: {
+            orderBy: { name: 'asc' },
+            take: 10
+          },
+          achievements: {
+            orderBy: { issueDate: 'desc' },
+            take: 5
+          }
+        }
+      });
+
+      if (!profile) {
+        throw new Error('Alumni card not found');
+      }
+
+      return profile;
+    },
+
     profiles: async (_, { filter }) => {
       return await ProfileService.getProfiles(filter);
     },
@@ -159,6 +195,11 @@ const resolvers = {
     updateProfile: async (_, { input }, context) => {
       if (!context.user) throw new Error('Not authenticated');
       return await ProfileService.updateProfile(context.user.userId, input);
+    },
+
+    generateAlumniCard: async (_, __, context) => {
+      if (!context.user) throw new Error('Not authenticated');
+      return await ProfileService.generateAlumniCard(context.user.userId);
     },
 
     // ==================== EXPERIENCE MUTATIONS ====================

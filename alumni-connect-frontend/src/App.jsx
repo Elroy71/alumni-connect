@@ -8,6 +8,7 @@ import DashboardLayout from './layouts/DashboardLayout';
 import DashboardHome from './pages/dashboard/DashboardHome';
 import ProfilePage from './pages/dashboard/ProfilePage';
 import AlumniCardPage from './pages/dashboard/AlumniCardPage';
+import PublicProfilePage from './pages/PublicProfilePage';
 import SettingsPage from './pages/dashboard/SettingsPage';
 import ForumPage from './pages/dashboard/ForumPage';
 import CreatePostPage from './pages/dashboard/CreatePostPage';
@@ -67,6 +68,8 @@ function App() {
             isAuthenticated ? <Navigate to={getRedirectPath()} replace /> : <RegisterPage />
           }
         />
+
+        <Route path="/alumni/:cardNumber" element={<PublicProfilePage />} />
 
         {/* Protected Dashboard Routes */}
         <Route

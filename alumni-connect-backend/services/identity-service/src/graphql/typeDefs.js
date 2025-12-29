@@ -381,6 +381,7 @@ const baseTypeDefs = gql`
 
     # Profile
     profile(userId: ID!): Profile
+    publicProfile(cardNumber: String!): Profile
     myProfile: Profile!
 
     # Forum
