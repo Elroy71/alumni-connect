@@ -1,502 +1,413 @@
 import React from 'react';
 import { useQuery } from '@apollo/client';
-import { GET_DASHBOARD_STATS } from '../../graphql/admin';
-import { Users, Calendar, DollarSign, FileText, TrendingUp, Clock } from 'lucide-react';
+import { GET_PENDING_EVENTS, GET_EVENT_HISTORY } from '../../graphql/admin';
+import { GET_PENDING_CAMPAIGNS, GET_CAMPAIGN_HISTORY } from '../../graphql/funding.queries';
+import { Users, Calendar, DollarSign, FileText, TrendingUp, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const AdminDashboard = () => {
-    const { data, loading, error } = useQuery(GET_DASHBOARD_STATS);
+  const { data: pendingEventsData, loading: loadingEvents } = useQuery(GET_PENDING_EVENTS, {
+    fetchPolicy: 'network-only'
+  });
+  const { data: historyEventsData, loading: loadingEventsHistory } = useQuery(GET_EVENT_HISTORY, {
+    fetchPolicy: 'network-only'
+  });
+  const { data: pendingCampaignsData, loading: loadingCampaigns } = useQuery(GET_PENDING_CAMPAIGNS, {
+    fetchPolicy: 'network-only'
+  });
+  const { data: historyCampaignsData, loading: loadingCampaignsHistory } = useQuery(GET_CAMPAIGN_HISTORY, {
+    fetchPolicy: 'network-only'
+  });
 
-    if (loading) return (
-        <div className="loading-container">
-            <div className="spinner"></div>
-            <p>Memuat dashboard...</p>
+  const loading = loadingEvents || loadingEventsHistory || loadingCampaigns || loadingCampaignsHistory;
+
+  if (loading) return (
+    <div className="loading-container">
+      <div className="spinner"></div>
+      <p>Memuat dashboard...</p>
+      <style jsx>{`
+                .loading-container {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 60px;
+                    color: #64748b;
+                }
+                .spinner {
+                    width: 40px;
+                    height: 40px;
+                    border: 4px solid #e2e8f0;
+                    border-top-color: #6366f1;
+                    border-radius: 50%;
+                    animation: spin 1s linear infinite;
+                    margin-bottom: 16px;
+                }
+                @keyframes spin {
+                    to { transform: rotate(360deg); }
+                }
+            `}</style>
+    </div>
+  );
+
+  // Calculate stats from actual data
+  const allEvents = pendingEventsData?.events?.events || [];
+  const allEventHistory = historyEventsData?.events?.events || [];
+  const pendingEvents = allEvents.filter(e => e.status === 'PENDING_APPROVAL');
+  const approvedEvents = allEventHistory.filter(e => e.status === 'PUBLISHED' || e.status === 'ONGOING' || e.status === 'COMPLETED');
+  const rejectedEvents = allEventHistory.filter(e => e.status === 'REJECTED' || e.status === 'CANCELLED');
+
+  const pendingCampaigns = pendingCampaignsData?.getPendingCampaigns?.campaigns || [];
+  const approvedCampaigns = historyCampaignsData?.getCampaignHistory?.campaigns?.filter(c => c.status === 'ACTIVE' || c.status === 'PUBLISHED') || [];
+  const rejectedCampaigns = historyCampaignsData?.getCampaignHistory?.campaigns?.filter(c => c.status === 'REJECTED') || [];
+
+  const statCards = [
+    {
+      icon: Calendar,
+      label: 'Event Pending',
+      value: pendingEvents.length,
+      subtext: `${approvedEvents.length} approved`,
+      color: '#8b5cf6',
+      bgColor: '#f5f3ff',
+      link: '/admin/events'
+    },
+    {
+      icon: DollarSign,
+      label: 'Campaign Pending',
+      value: pendingCampaigns.length,
+      subtext: `${approvedCampaigns.length} approved`,
+      color: '#10b981',
+      bgColor: '#ecfdf5',
+      link: '/admin/funding'
+    },
+    {
+      icon: CheckCircle,
+      label: 'Total Approved',
+      value: approvedEvents.length + approvedCampaigns.length,
+      subtext: 'Events & Campaigns',
+      color: '#059669',
+      bgColor: '#d1fae5'
+    },
+    {
+      icon: XCircle,
+      label: 'Total Rejected',
+      value: rejectedEvents.length + rejectedCampaigns.length,
+      subtext: 'Events & Campaigns',
+      color: '#ef4444',
+      bgColor: '#fee2e2'
+    }
+  ];
+
+  return (
+    <div className="admin-dashboard">
+      <h1 className="page-title">Dashboard Super Admin</h1>
+      <p className="page-subtitle">Selamat datang kembali, lihat ringkasan aktivitas terbaru</p>
+
+      {/* Stats Grid */}
+      <div className="stats-grid">
+        {statCards.map((stat, index) => (
+          <StatCard key={index} {...stat} />
+        ))}
+      </div>
+
+      {/* Quick Actions */}
+      <div className="quick-actions">
+        <h2 className="section-title">Tindakan Cepat</h2>
+        <div className="actions-grid">
+          <ActionCard
+            icon={Calendar}
+            title="Setujui Event"
+            description={`${pendingEvents.length} event menunggu approval`}
+            link="/admin/events"
+            color="#8b5cf6"
+          />
+          <ActionCard
+            icon={DollarSign}
+            title="Setujui Funding"
+            description={`${pendingCampaigns.length} campaign menunggu approval`}
+            link="/admin/funding"
+            color="#10b981"
+          />
         </div>
-    );
+      </div>
 
-    if (error) return (
-        <div className="error-container">
-            <p>Error: {error.message}</p>
-        </div>
-    );
-
-    const stats = data?.getDashboardStats?.stats;
-    const recentActivities = data?.getDashboardStats?.recentActivities;
-
-    const statCards = [
-        {
-            icon: Users,
-            label: 'Total Users',
-            value: stats?.users?.total || 0,
-            subtext: `${stats?.users?.active || 0} active`,
-            color: '#3b82f6',
-            bgColor: '#eff6ff'
-        },
-        {
-            icon: Calendar,
-            label: 'Pending Events',
-            value: stats?.events?.pending || 0,
-            subtext: `${stats?.events?.total || 0} total events`,
-            color: '#8b5cf6',
-            bgColor: '#f5f3ff',
-            link: '/admin/events'
-        },
-        {
-            icon: DollarSign,
-            label: 'Pending Campaigns',
-            value: stats?.campaigns?.pending || 0,
-            subtext: `${stats?.campaigns?.total || 0} total campaigns`,
-            color: '#10b981',
-            bgColor: '#ecfdf5',
-            link: '/admin/funding'
-        },
-        {
-            icon: FileText,
-            label: 'Total Posts',
-            value: stats?.posts?.total || 0,
-            subtext: 'Forum discussions',
-            color: '#f59e0b',
-            bgColor: '#fffbeb'
-        }
-    ];
-
-    return (
-        <div className="admin-dashboard">
-            {/* Stats Grid */}
-            <div className="stats-grid">
-                {statCards.map((stat, index) => (
-                    <StatCard key={index} {...stat} />
-                ))}
-            </div>
-
-            {/* Quick Actions */}
-            <div className="quick-actions">
-                <h2 className="section-title">Tindakan Cepat</h2>
-                <div className="actions-grid">
-                    <ActionCard
-                        icon={Calendar}
-                        title="Setujui Event"
-                        description={`${stats?.events?.pending || 0} event menunggu approval`}
-                        link="/admin/events"
-                        color="#8b5cf6"
-                    />
-                    <ActionCard
-                        icon={DollarSign}
-                        title="Setujui Campaign"
-                        description={`${stats?.campaigns?.pending || 0} campaign menunggu approval`}
-                        link="/admin/funding"
-                        color="#10b981"
-                    />
-                    <ActionCard
-                        icon={Users}
-                        title="Kelola User"
-                        description="Manage dan moderasi user"
-                        link="/admin/users"
-                        color="#3b82f6"
-                    />
+      {/* Recent Activities */}
+      <div className="activities-section">
+        <h2 className="section-title">Event Pending Terbaru</h2>
+        {pendingEvents.length === 0 ? (
+          <div className="empty-state">
+            <AlertCircle size={32} />
+            <p>Tidak ada event pending</p>
+          </div>
+        ) : (
+          <div className="activity-list">
+            {pendingEvents.slice(0, 5).map(event => (
+              <div key={event.id} className="activity-item">
+                <div className="activity-icon" style={{ background: '#f5f3ff' }}>
+                  <Calendar size={20} color="#8b5cf6" />
                 </div>
-            </div>
-
-            {/* Recent Activities */}
-            <div className="recent-activities">
-                <h2 className="section-title">Aktivitas Terbaru</h2>
-                <div className="activities-grid">
-                    <ActivitySection
-                        title="User Baru"
-                        icon={Users}
-                        items={recentActivities?.users || []}
-                        renderItem={(user) => (
-                            <div className="activity-item">
-                                <div className="activity-avatar">
-                                    {user.profile?.avatar ? (
-                                        <img src={user.profile.avatar} alt="" />
-                                    ) : (
-                                        <div className="avatar-placeholder">
-                                            {user.profile?.fullName?.charAt(0) || 'U'}
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="activity-info">
-                                    <p className="activity-name">{user.profile?.fullName || 'Unknown'}</p>
-                                    <p className="activity-detail">{user.email}</p>
-                                </div>
-                                <span className="activity-time">{formatTime(user.createdAt)}</span>
-                            </div>
-                        )}
-                    />
-
-                    <ActivitySection
-                        title="Event Pending"
-                        icon={Calendar}
-                        items={recentActivities?.events || []}
-                        renderItem={(event) => (
-                            <div className="activity-item">
-                                <div className="activity-info">
-                                    <p className="activity-name">{event.title}</p>
-                                    <p className="activity-detail">
-                                        Oleh {event.organizer?.profile?.fullName || 'Unknown'}
-                                    </p>
-                                </div>
-                                <span className="activity-badge pending">Pending</span>
-                            </div>
-                        )}
-                    />
-
-                    <ActivitySection
-                        title="Campaign Pending"
-                        icon={DollarSign}
-                        items={recentActivities?.campaigns || []}
-                        renderItem={(campaign) => (
-                            <div className="activity-item">
-                                <div className="activity-info">
-                                    <p className="activity-name">{campaign.title}</p>
-                                    <p className="activity-detail">
-                                        Oleh {campaign.creator?.profile?.fullName || 'Unknown'}
-                                    </p>
-                                </div>
-                                <span className="activity-badge pending">Pending</span>
-                            </div>
-                        )}
-                    />
+                <div className="activity-content">
+                  <span className="activity-title">{event.title}</span>
+                  <span className="activity-meta">{event.location} • {new Date(event.startDate).toLocaleDateString('id-ID')}</span>
                 </div>
-            </div>
+                <span className="status-badge pending">Pending</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
-            <style jsx>{`
-        .admin-dashboard {
-          max-width: 1400px;
-        }
+      <style jsx>{`
+                .admin-dashboard {
+                    max-width: 1400px;
+                }
 
-        .loading-container, .error-container {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          min-height: 400px;
-          gap: 16px;
-        }
+                .page-title {
+                    font-size: 32px;
+                    font-weight: 800;
+                    color: #1e293b;
+                    margin-bottom: 8px;
+                }
 
-        .spinner {
-          width: 40px;
-          height: 40px;
-          border: 4px solid #f3f4f6;
-          border-top: 4px solid #667eea;
-          border-radius: 50%;
-          animation: spin 1s linear infinite;
-        }
+                .page-subtitle {
+                    color: #64748b;
+                    font-size: 16px;
+                    margin-bottom: 32px;
+                }
 
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
+                .stats-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+                    gap: 24px;
+                    margin-bottom: 40px;
+                }
 
-        .stats-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-          gap: 24px;
-          margin-bottom: 32px;
-        }
+                .section-title {
+                    font-size: 20px;
+                    font-weight: 700;
+                    color: #1e293b;
+                    margin-bottom: 20px;
+                }
 
-        .quick-actions, .recent-activities {
-          margin-bottom: 32px;
-        }
+                .quick-actions {
+                    margin-bottom: 40px;
+                }
 
-        .section-title {
-          font-size: 20px;
-          font-weight: 700;
-          color: #1e293b;
-          margin-bottom: 16px;
-        }
+                .actions-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                    gap: 20px;
+                }
 
-        .actions-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-          gap: 20px;
-        }
+                .activities-section {
+                    background: white;
+                    border-radius: 16px;
+                    padding: 24px;
+                    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+                }
 
-        .activities-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-          gap: 20px;
-        }
+                .activity-list {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                }
 
-        .activity-item {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 12px;
-          border-radius: 8px;
-          transition: background 0.2s;
-        }
+                .activity-item {
+                    display: flex;
+                    align-items: center;
+                    gap: 16px;
+                    padding: 16px;
+                    background: #f8fafc;
+                    border-radius: 12px;
+                    transition: all 0.2s;
+                }
 
-        .activity-item:hover {
-          background: #f8fafc;
-        }
+                .activity-item:hover {
+                    background: #f1f5f9;
+                }
 
-        .activity-avatar {
-          width: 40px;
-          height: 40px;
-          border-radius: 50%;
-          overflow: hidden;
-        }
+                .activity-icon {
+                    width: 44px;
+                    height: 44px;
+                    border-radius: 12px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
 
-        .activity-avatar img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
+                .activity-content {
+                    flex: 1;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 4px;
+                }
 
-        .avatar-placeholder {
-          width: 100%;
-          height: 100%;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          color: white;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: 700;
-        }
+                .activity-title {
+                    font-weight: 600;
+                    color: #1e293b;
+                }
 
-        .activity-info {
-          flex: 1;
-        }
+                .activity-meta {
+                    font-size: 13px;
+                    color: #64748b;
+                }
 
-        .activity-name {
-          font-weight: 600;
-          color: #1e293b;
-          margin-bottom: 4px;
-        }
+                .status-badge {
+                    padding: 6px 12px;
+                    border-radius: 20px;
+                    font-size: 12px;
+                    font-weight: 600;
+                }
 
-        .activity-detail {
-          font-size: 14px;
-          color: #64748b;
-        }
+                .status-badge.pending {
+                    background: #fef3c7;
+                    color: #92400e;
+                }
 
-        .activity-time {
-          font-size: 13px;
-          color: #94a3b8;
-        }
+                .empty-state {
+                    text-align: center;
+                    padding: 40px;
+                    color: #94a3b8;
+                }
 
-        .activity-badge {
-          padding: 4px 12px;
-          border-radius: 20px;
-          font-size: 13px;
-          font-weight: 600;
-        }
-
-        .activity-badge.pending {
-          background: #fef3c7;
-          color: #92400e;
-        }
-
-        @media (max-width: 768px) {
-          .stats-grid,
-          .actions-grid,
-          .activities-grid {
-            grid-template-columns: 1fr;
-          }
-        }
-      `}</style>
-        </div>
-    );
+                .empty-state p {
+                    margin-top: 12px;
+                }
+            `}</style>
+    </div>
+  );
 };
 
 const StatCard = ({ icon: Icon, label, value, subtext, color, bgColor, link }) => {
-    const CardContent = () => (
-        <>
-            <div className="stat-icon" style={{ background: bgColor, color }}>
-                <Icon size={24} />
-            </div>
-            <div className="stat-content">
-                <p className="stat-label">{label}</p>
-                <h3 className="stat-value">{value}</h3>
-                <p className="stat-subtext">{subtext}</p>
-            </div>
-            <style jsx>{`
-        .stat-icon {
-          width: 60px;
-          height: 60px;
-          border-radius: 16px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin-bottom: 16px;
-        }
+  const CardContent = () => (
+    <div className="stat-card" style={{ '--card-color': color, '--card-bg': bgColor }}>
+      <div className="stat-icon">
+        <Icon size={24} color={color} />
+      </div>
+      <div className="stat-content">
+        <span className="stat-value">{value}</span>
+        <span className="stat-label">{label}</span>
+        <span className="stat-subtext">{subtext}</span>
+      </div>
+      <style jsx>{`
+                .stat-card {
+                    background: white;
+                    border-radius: 16px;
+                    padding: 24px;
+                    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+                    transition: all 0.3s;
+                    cursor: ${link ? 'pointer' : 'default'};
+                }
 
-        .stat-label {
-          font-size: 14px;
-          color: #64748b;
-          margin-bottom: 8px;
-        }
+                .stat-card:hover {
+                    transform: translateY(-4px);
+                    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+                }
 
-        .stat-value {
-          font-size: 32px;
-          font-weight: 700;
-          color: #1e293b;
-          margin-bottom: 4px;
-        }
+                .stat-icon {
+                    width: 56px;
+                    height: 56px;
+                    border-radius: 16px;
+                    background: var(--card-bg);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin-bottom: 16px;
+                }
 
-        .stat-subtext {
-          font-size: 14px;
-          color: #94a3b8;
-        }
-      `}</style>
-        </>
-    );
+                .stat-content {
+                    display: flex;
+                    flex-direction: column;
+                }
 
-    if (link) {
-        return (
-            <Link to={link} className="stat-card clickable">
-                <CardContent />
-                <style jsx>{`
-          .stat-card {
-            background: white;
-            padding: 24px;
-            border-radius: 16px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-            transition: all 0.3s;
-            text-decoration: none;
-            display: block;
-          }
+                .stat-value {
+                    font-size: 36px;
+                    font-weight: 800;
+                    color: var(--card-color);
+                }
 
-          .stat-card.clickable:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
-          }
-        `}</style>
-            </Link>
-        );
-    }
+                .stat-label {
+                    font-size: 16px;
+                    font-weight: 600;
+                    color: #1e293b;
+                    margin-top: 4px;
+                }
 
-    return (
-        <div className="stat-card">
-            <CardContent />
-            <style jsx>{`
-        .stat-card {
-          background: white;
-          padding: 24px;
-          border-radius: 16px;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-        }
-      `}</style>
-        </div>
-    );
+                .stat-subtext {
+                    font-size: 14px;
+                    color: #64748b;
+                    margin-top: 4px;
+                }
+            `}</style>
+    </div>
+  );
+
+  return link ? (
+    <Link to={link} style={{ textDecoration: 'none' }}>
+      <CardContent />
+    </Link>
+  ) : (
+    <CardContent />
+  );
 };
 
 const ActionCard = ({ icon: Icon, title, description, link, color }) => (
-    <Link to={link} className="action-card">
-        <div className="action-icon" style={{ background: `${color}20`, color }}>
-            <Icon size={24} />
-        </div>
-        <div className="action-content">
-            <h3 className="action-title">{title}</h3>
-            <p className="action-description">{description}</p>
-        </div>
-        <style jsx>{`
-      .action-card {
-        background: white;
-        padding: 20px;
-        border-radius: 12px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-        display: flex;
-        gap: 16px;
-        align-items: center;
-        text-decoration: none;
-        transition: all 0.2s;
-      }
-
-      .action-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-      }
-
-      .action-icon {
-        width: 48px;
-        height: 48px;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-      }
-
-      .action-title {
-        font-size: 16px;
-        font-weight: 600;
-        color: #1e293b;
-        margin-bottom: 4px;
-      }
-
-      .action-description {
-        font-size: 14px;
-        color: #64748b;
-      }
-    `}</style>
-    </Link>
-);
-
-const ActivitySection = ({ title, icon: Icon, items, renderItem }) => (
-    <div className="activity-section">
-        <div className="activity-header">
-            <Icon size={20} />
-            <h3>{title}</h3>
-        </div>
-        <div className="activity-list">
-            {items.length > 0 ? (
-                items.map((item, index) => (
-                    <div key={index}>{renderItem(item)}</div>
-                ))
-            ) : (
-                <p className="empty-state">Tidak ada {title.toLowerCase()}</p>
-            )}
-        </div>
-        <style jsx>{`
-      .activity-section {
-        background: white;
-        padding: 20px;
-        border-radius: 12px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-      }
-
-      .activity-header {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 16px;
-        padding-bottom: 12px;
-        border-bottom: 1px solid #f1f5f9;
-      }
-
-      .activity-header h3 {
-        font-size: 16px;
-        font-weight: 600;
-        color: #1e293b;
-      }
-
-      .activity-list {
-        max-height: 400px;
-        overflow-y: auto;
-      }
-
-      .empty-state {
-        text-align: center;
-        color: #94a3b8;
-        padding: 32px;
-        font-size: 14px;
-      }
-    `}</style>
+  <Link to={link} className="action-card" style={{ textDecoration: 'none' }}>
+    <div className="action-content" style={{ '--action-color': color }}>
+      <div className="action-icon">
+        <Icon size={24} color={color} />
+      </div>
+      <div className="action-text">
+        <span className="action-title">{title}</span>
+        <span className="action-desc">{description}</span>
+      </div>
     </div>
+    <style jsx>{`
+            .action-content {
+                background: white;
+                border-radius: 16px;
+                padding: 24px;
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+                transition: all 0.3s;
+                border-left: 4px solid var(--action-color);
+            }
+
+            .action-content:hover {
+                transform: translateX(8px);
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+            }
+
+            .action-icon {
+                width: 48px;
+                height: 48px;
+                border-radius: 12px;
+                background: #f8fafc;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .action-text {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+
+            .action-title {
+                font-size: 16px;
+                font-weight: 700;
+                color: #1e293b;
+            }
+
+            .action-desc {
+                font-size: 14px;
+                color: #64748b;
+            }
+        `}</style>
+  </Link>
 );
-
-const formatTime = (dateString) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diff = now - date;
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-
-    if (days === 0) return 'Hari ini';
-    if (days === 1) return 'Kemarin';
-    if (days < 7) return `${days} hari lalu`;
-    return date.toLocaleDateString('id-ID');
-};
 
 export default AdminDashboard;
