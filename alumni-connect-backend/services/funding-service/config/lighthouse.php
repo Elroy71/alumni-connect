@@ -90,7 +90,7 @@ return [
     'security' => [
         'max_query_complexity' => 250,
         'max_query_depth' => 10,
-        'disable_introspection' => env('LIGHTHOUSE_SECURITY_DISABLE_INTROSPECTION', false),
+        'disable_introspection' => env('LIGHTHOUSE_SECURITY_DISABLE_INTROSPECTION', 0),
     ],
 
     /*

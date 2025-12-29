@@ -34,8 +34,8 @@ const DashboardHome = () => {
   const myDonations = donationsData?.myDonations || [];
 
   const totalDonated = myDonations
-    .filter(d => d.status === 'VERIFIED')
-    .reduce((sum, d) => sum + d.amount, 0);
+    .filter(d => d.paymentStatus === 'success' || d.paymentStatus === 'SUCCESS')
+    .reduce((sum, d) => sum + (d.amount || 0), 0);
 
   const stats = [
     {

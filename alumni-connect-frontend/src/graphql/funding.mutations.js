@@ -92,3 +92,6 @@ export const REJECT_CAMPAIGN = gql`
     }
   }
 `;
+
+// Alias for backward compatibility
+export const CREATE_DONATION = DONATE_TO_CAMPAIGN;

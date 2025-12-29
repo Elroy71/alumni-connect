@@ -2,33 +2,53 @@ import React, { useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client';
 import { GET_PENDING_CAMPAIGNS } from '../../graphql/funding.queries';
 import { APPROVE_CAMPAIGN, REJECT_CAMPAIGN } from '../../graphql/funding.mutations';
-import { DollarSign, User, Calendar, Target, Check, X } from 'lucide-react';
+import { DollarSign, User, Calendar, Target, Check, X, Eye } from 'lucide-react';
+
+// Category display mapping
+const CATEGORY_LABELS = {
+  'scholarship': 'Beasiswa',
+  'research': 'Riset',
+  'event': 'Event',
+  'infrastructure': 'Infrastruktur',
+  'SCHOLARSHIP': 'Beasiswa',
+  'RESEARCH': 'Riset',
+  'EVENT': 'Event',
+  'INFRASTRUCTURE': 'Infrastruktur'
+};
 
 const FundingApproval = () => {
   const [selectedCampaign, setSelectedCampaign] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectModal, setShowRejectModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
   const { data, loading, refetch } = useQuery(GET_PENDING_CAMPAIGNS);
 
-  const [approveCampaign] = useMutation(APPROVE_CAMPAIGN, {
+  const [approveCampaign, { loading: approving }] = useMutation(APPROVE_CAMPAIGN, {
     onCompleted: () => {
       refetch();
       alert('Campaign berhasil disetujui!');
+    },
+    onError: (error) => {
+      alert('Gagal menyetujui campaign: ' + error.message);
     }
   });
 
-  const [rejectCampaign] = useMutation(REJECT_CAMPAIGN, {
+  const [rejectCampaign, { loading: rejecting }] = useMutation(REJECT_CAMPAIGN, {
     onCompleted: () => {
       refetch();
       setShowRejectModal(false);
       setRejectReason('');
-      alert('Campaign ditolak');
+      setSelectedCampaign(null);
+      alert('Campaign telah ditolak');
+    },
+    onError: (error) => {
+      alert('Gagal menolak campaign: ' + error.message);
     }
   });
 
   const handleApprove = (id) => {
-    if (confirm('Setujui campaign ini?')) {
+    if (confirm('Apakah Anda yakin ingin menyetujui campaign ini?')) {
       approveCampaign({ variables: { id } });
     }
   };
@@ -36,6 +56,11 @@ const FundingApproval = () => {
   const handleReject = (campaign) => {
     setSelectedCampaign(campaign);
     setShowRejectModal(true);
+  };
+
+  const handleViewDetail = (campaign) => {
+    setSelectedCampaign(campaign);
+    setShowDetailModal(true);
   };
 
   const submitReject = () => {
@@ -51,14 +76,28 @@ const FundingApproval = () => {
     });
   };
 
-  if (loading) return <div>Memuat...</div>;
+  const formatAmount = (amount) => {
+    if (!amount) return 'Rp 0';
+    return `Rp ${new Intl.NumberFormat('id-ID').format(amount)}`;
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+  };
+
+  if (loading) return <div className="loading">Memuat...</div>;
 
   const campaigns = data?.pendingCampaigns || [];
 
   return (
     <div className="funding-approval">
       <div className="page-header">
-        <h1>Funding Approval</h1>
+        <h1>Persetujuan Funding</h1>
         <p className="page-subtitle">{campaigns.length} campaign menunggu persetujuan</p>
       </div>
 
@@ -75,26 +114,28 @@ const FundingApproval = () => {
               {campaign.imageUrl && (
                 <div className="campaign-image">
                   <img src={campaign.imageUrl} alt={campaign.title} />
-                  <div className="campaign-badge">PENDING</div>
+                  <div className="campaign-badge">MENUNGGU</div>
                 </div>
               )}
 
               <div className="campaign-content">
-                <div className="campaign-category">{campaign.category}</div>
+                <div className="campaign-category">
+                  {CATEGORY_LABELS[campaign.category] || campaign.category}
+                </div>
                 <h3 className="campaign-title">{campaign.title}</h3>
 
                 <div className="campaign-meta">
                   <div className="meta-item">
                     <User size={16} />
-                    <span>{campaign.userId}</span>
+                    <span>User ID: {campaign.userId?.slice(-8) || '-'}</span>
                   </div>
                   <div className="meta-item">
                     <Target size={16} />
-                    <span>Target: Rp {campaign.targetAmount?.toLocaleString('id-ID')}</span>
+                    <span>Target: {formatAmount(campaign.targetAmount)}</span>
                   </div>
                   <div className="meta-item">
                     <Calendar size={16} />
-                    <span>Deadline: {new Date(campaign.endDate).toLocaleDateString('id-ID')}</span>
+                    <span>Deadline: {formatDate(campaign.endDate)}</span>
                   </div>
                 </div>
 
@@ -102,8 +143,16 @@ const FundingApproval = () => {
 
                 <div className="campaign-actions">
                   <button
+                    className="btn-view"
+                    onClick={() => handleViewDetail(campaign)}
+                  >
+                    <Eye size={18} />
+                    Detail
+                  </button>
+                  <button
                     className="btn-approve"
                     onClick={() => handleApprove(campaign.id)}
+                    disabled={approving}
                   >
                     <Check size={18} />
                     Setujui
@@ -111,6 +160,7 @@ const FundingApproval = () => {
                   <button
                     className="btn-reject"
                     onClick={() => handleReject(campaign)}
+                    disabled={rejecting}
                   >
                     <X size={18} />
                     Tolak
@@ -122,11 +172,12 @@ const FundingApproval = () => {
         )}
       </div>
 
+      {/* Reject Modal */}
       {showRejectModal && (
         <div className="modal-overlay" onClick={() => setShowRejectModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h3>Tolak Campaign</h3>
-            <p>Campaign: {selectedCampaign?.title}</p>
+            <p><strong>Campaign:</strong> {selectedCampaign?.title}</p>
             <textarea
               className="reject-reason"
               placeholder="Alasan penolakan..."
@@ -136,7 +187,81 @@ const FundingApproval = () => {
             />
             <div className="modal-actions">
               <button onClick={() => setShowRejectModal(false)} className="btn-cancel">Batal</button>
-              <button onClick={submitReject} className="btn-submit">Tolak Campaign</button>
+              <button onClick={submitReject} className="btn-submit" disabled={rejecting}>
+                {rejecting ? 'Memproses...' : 'Tolak Campaign'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Detail Modal */}
+      {showDetailModal && selectedCampaign && (
+        <div className="modal-overlay" onClick={() => setShowDetailModal(false)}>
+          <div className="modal-content modal-large" onClick={(e) => e.stopPropagation()}>
+            <h3>Detail Campaign</h3>
+
+            {selectedCampaign.imageUrl && (
+              <img
+                src={selectedCampaign.imageUrl}
+                alt={selectedCampaign.title}
+                className="detail-image"
+              />
+            )}
+
+            <div className="detail-section">
+              <label>Judul:</label>
+              <p>{selectedCampaign.title}</p>
+            </div>
+
+            <div className="detail-section">
+              <label>Kategori:</label>
+              <p>{CATEGORY_LABELS[selectedCampaign.category] || selectedCampaign.category}</p>
+            </div>
+
+            <div className="detail-section">
+              <label>Target Dana:</label>
+              <p>{formatAmount(selectedCampaign.targetAmount)}</p>
+            </div>
+
+            <div className="detail-section">
+              <label>Batas Waktu:</label>
+              <p>{formatDate(selectedCampaign.endDate)}</p>
+            </div>
+
+            <div className="detail-section">
+              <label>Deskripsi:</label>
+              <p className="description-text">{selectedCampaign.description}</p>
+            </div>
+
+            <div className="detail-section">
+              <label>Dibuat Pada:</label>
+              <p>{formatDate(selectedCampaign.createdAt)}</p>
+            </div>
+
+            <div className="modal-actions">
+              <button onClick={() => setShowDetailModal(false)} className="btn-cancel">Tutup</button>
+              <button
+                onClick={() => {
+                  setShowDetailModal(false);
+                  handleApprove(selectedCampaign.id);
+                }}
+                className="btn-approve"
+                disabled={approving}
+              >
+                <Check size={18} />
+                Setujui
+              </button>
+              <button
+                onClick={() => {
+                  setShowDetailModal(false);
+                  handleReject(selectedCampaign);
+                }}
+                className="btn-reject"
+              >
+                <X size={18} />
+                Tolak
+              </button>
             </div>
           </div>
         </div>
@@ -145,6 +270,12 @@ const FundingApproval = () => {
       <style jsx>{`
         .funding-approval {
           max-width: 1400px;
+        }
+
+        .loading {
+          text-align: center;
+          padding: 40px;
+          color: #64748b;
         }
 
         .page-header {
@@ -259,7 +390,7 @@ const FundingApproval = () => {
           gap: 12px;
         }
 
-        .btn-approve, .btn-reject {
+        .btn-view, .btn-approve, .btn-reject {
           flex: 1;
           padding: 12px;
           border: none;
@@ -273,13 +404,27 @@ const FundingApproval = () => {
           transition: all 0.2s;
         }
 
+        .btn-view {
+          background: #e2e8f0;
+          color: #475569;
+        }
+
+        .btn-view:hover {
+          background: #cbd5e1;
+        }
+
         .btn-approve {
           background: #10b981;
           color: white;
         }
 
-        .btn-approve:hover {
+        .btn-approve:hover:not(:disabled) {
           background: #059669;
+        }
+
+        .btn-approve:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
         }
 
         .btn-reject {
@@ -287,8 +432,13 @@ const FundingApproval = () => {
           color: white;
         }
 
-        .btn-reject:hover {
+        .btn-reject:hover:not(:disabled) {
           background: #dc2626;
+        }
+
+        .btn-reject:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
         }
 
         .empty-state {
@@ -317,6 +467,47 @@ const FundingApproval = () => {
           border-radius: 16px;
           max-width: 500px;
           width: 90%;
+          max-height: 90vh;
+          overflow-y: auto;
+        }
+
+        .modal-large {
+          max-width: 700px;
+        }
+
+        .modal-content h3 {
+          font-size: 24px;
+          font-weight: 700;
+          color: #1e293b;
+          margin-bottom: 16px;
+        }
+
+        .detail-image {
+          width: 100%;
+          height: 200px;
+          object-fit: cover;
+          border-radius: 12px;
+          margin-bottom: 20px;
+        }
+
+        .detail-section {
+          margin-bottom: 16px;
+        }
+
+        .detail-section label {
+          font-weight: 600;
+          color: #64748b;
+          font-size: 14px;
+        }
+
+        .detail-section p {
+          color: #1e293b;
+          margin-top: 4px;
+        }
+
+        .description-text {
+          white-space: pre-wrap;
+          line-height: 1.6;
         }
 
         .reject-reason {
@@ -333,6 +524,7 @@ const FundingApproval = () => {
           display: flex;
           gap: 12px;
           justify-content: flex-end;
+          margin-top: 20px;
         }
 
         .btn-cancel, .btn-submit {
@@ -351,6 +543,11 @@ const FundingApproval = () => {
         .btn-submit {
           background: #ef4444;
           color: white;
+        }
+
+        .btn-submit:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
         }
       `}</style>
     </div>

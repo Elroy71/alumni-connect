@@ -8,6 +8,15 @@ import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 
+// Category mapping to match backend enum
+const CATEGORIES = [
+  { label: 'Semua', value: null },
+  { label: 'Beasiswa', value: 'SCHOLARSHIP' },
+  { label: 'Riset', value: 'RESEARCH' },
+  { label: 'Event', value: 'EVENT' },
+  { label: 'Infrastruktur', value: 'INFRASTRUCTURE' }
+];
+
 const FundingPage = () => {
   const [filters, setFilters] = useState({
     search: '',
@@ -16,14 +25,11 @@ const FundingPage = () => {
 
   const { data, loading, refetch } = useQuery(GET_CAMPAIGNS, {
     variables: {
-      filter: {
-        search: filters.search || undefined,
-        category: filters.category || undefined,
-        status: 'ACTIVE',
-        limit: 20,
-        offset: 0
-      }
-    }
+      search: filters.search || undefined,
+      category: filters.category || undefined,
+      status: 'ACTIVE'
+    },
+    fetchPolicy: 'network-only'
   });
 
   const handleSearch = (e) => {
@@ -43,8 +49,8 @@ const FundingPage = () => {
     );
   }
 
-  const campaigns = data?.campaigns?.campaigns || [];
-  const pagination = data?.campaigns?.pagination;
+  const campaigns = data?.campaigns || [];
+  const totalCampaigns = campaigns.length;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -60,7 +66,7 @@ const FundingPage = () => {
         </div>
         <Link to="/dashboard/funding/create">
           <Button variant="primary" size="lg" icon={<Plus className="w-5 h-5" />}>
-            Create Campaign
+            Buat Campaign
           </Button>
         </Link>
       </div>
@@ -79,35 +85,23 @@ const FundingPage = () => {
               />
             </div>
             <Button type="submit" variant="primary">
-              Search
+              Cari
             </Button>
           </div>
 
           {/* Category Filter */}
           <div className="flex gap-3 overflow-x-auto pb-2">
-            <button
-              type="button"
-              onClick={() => handleFilterChange('category', null)}
-              className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all ${
-                !filters.category
-                  ? 'bg-primary-600 text-white'
-                  : 'bg-dark-100 text-dark-700 hover:bg-dark-200'
-              }`}
-            >
-              Semua
-            </button>
-            {['Pendidikan', 'Kesehatan', 'Bencana', 'Sosial', 'Bisnis', 'Teknologi', 'Lingkungan', 'Lainnya'].map((cat) => (
+            {CATEGORIES.map((cat) => (
               <button
-                key={cat}
+                key={cat.value || 'all'}
                 type="button"
-                onClick={() => handleFilterChange('category', cat)}
-                className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all ${
-                  filters.category === cat
+                onClick={() => handleFilterChange('category', cat.value)}
+                className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all ${filters.category === cat.value
                     ? 'bg-primary-600 text-white'
                     : 'bg-dark-100 text-dark-700 hover:bg-dark-200'
-                }`}
+                  }`}
               >
-                {cat}
+                {cat.label}
               </button>
             ))}
           </div>
@@ -117,7 +111,7 @@ const FundingPage = () => {
       {/* Results */}
       <div className="flex items-center justify-between">
         <p className="text-dark-600">
-          <span className="font-bold text-dark-900">{pagination?.total || 0}</span> campaign ditemukan
+          <span className="font-bold text-dark-900">{totalCampaigns}</span> campaign ditemukan
         </p>
       </div>
 
@@ -135,7 +129,7 @@ const FundingPage = () => {
           </p>
           <Link to="/dashboard/funding/create">
             <Button variant="primary" size="lg" icon={<Plus className="w-5 h-5" />}>
-              Create First Campaign
+              Buat Campaign Pertama
             </Button>
           </Link>
         </Card>
@@ -144,15 +138,6 @@ const FundingPage = () => {
           {campaigns.map((campaign) => (
             <CampaignCard key={campaign.id} campaign={campaign} />
           ))}
-        </div>
-      )}
-
-      {/* Load More */}
-      {pagination?.hasMore && (
-        <div className="text-center">
-          <Button variant="outline" size="lg">
-            Load More Campaigns
-          </Button>
         </div>
       )}
     </div>

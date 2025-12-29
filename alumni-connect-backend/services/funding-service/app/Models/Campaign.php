@@ -32,7 +32,72 @@ class Campaign extends Model
         'current_amount' => 'decimal:2',
         'start_date' => 'date',
         'end_date' => 'date',
+        'approved_at' => 'datetime',
+        'rejected_at' => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
+
+    // Append camelCase attributes for GraphQL compatibility
+    protected $appends = ['targetAmount', 'currentAmount', 'startDate', 'endDate', 'imageUrl', 'userId', 'approvedBy', 'approvedAt', 'rejectedBy', 'rejectedAt', 'rejectionReason'];
+
+    // CamelCase accessors for GraphQL
+    public function getTargetAmountAttribute()
+    {
+        return (float) $this->attributes['target_amount'] ?? 0;
+    }
+
+    public function getCurrentAmountAttribute()
+    {
+        return (float) $this->attributes['current_amount'] ?? 0;
+    }
+
+    public function getStartDateAttribute($value)
+    {
+        return $value;
+    }
+
+    public function getEndDateAttribute($value)
+    {
+        return $value;
+    }
+
+    public function getImageUrlAttribute()
+    {
+        return $this->attributes['image_url'] ?? null;
+    }
+
+    public function getUserIdAttribute()
+    {
+        return $this->attributes['user_id'] ?? null;
+    }
+
+    public function getApprovedByAttribute()
+    {
+        return $this->attributes['approved_by'] ?? null;
+    }
+
+    public function getApprovedAtAttribute($value)
+    {
+        return $value;
+    }
+
+    public function getRejectedByAttribute()
+    {
+        return $this->attributes['rejected_by'] ?? null;
+    }
+
+    public function getRejectedAtAttribute($value)
+    {
+        return $value;
+    }
+
+    public function getRejectionReasonAttribute()
+    {
+        return $this->attributes['rejection_reason'] ?? null;
+    }
+
+
 
     /**
      * Get all donations for this campaign

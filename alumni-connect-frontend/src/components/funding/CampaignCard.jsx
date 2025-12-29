@@ -6,36 +6,51 @@ import Badge from '../ui/Badge';
 import Button from '../ui/Button';
 
 const CampaignCard = ({ campaign }) => {
-  const formatAmount = (amount, currency) => {
-    if (currency === 'IDR') {
-      if (amount >= 1000000000) {
-        return `Rp ${(amount / 1000000000).toFixed(1)}M`;
-      }
-      if (amount >= 1000000) {
-        return `Rp ${(amount / 1000000).toFixed(1)}jt`;
-      }
-      return `Rp ${new Intl.NumberFormat('id-ID').format(amount)}`;
+  // Calculate days left from endDate
+  const calculateDaysLeft = (endDate) => {
+    if (!endDate) return 0;
+    const end = new Date(endDate);
+    const now = new Date();
+    const diffTime = end - now;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return Math.max(diffDays, 0);
+  };
+
+  // Format amount for display
+  const formatAmount = (amount) => {
+    if (!amount) return 'Rp 0';
+    if (amount >= 1000000000) {
+      return `Rp ${(amount / 1000000000).toFixed(1)}M`;
     }
-    return `$${new Intl.NumberFormat('en-US').format(amount)}`;
+    if (amount >= 1000000) {
+      return `Rp ${(amount / 1000000).toFixed(1)}jt`;
+    }
+    return `Rp ${new Intl.NumberFormat('id-ID').format(amount)}`;
   };
 
-  const getCategoryColor = (category) => {
-    const colors = {
-      'Pendidikan': 'bg-blue-100 text-blue-700',
-      'Kesehatan': 'bg-red-100 text-red-700',
-      'Bencana': 'bg-orange-100 text-orange-700',
-      'Sosial': 'bg-green-100 text-green-700',
-      'Bisnis': 'bg-purple-100 text-purple-700',
-      'Teknologi': 'bg-cyan-100 text-cyan-700',
-      'Lingkungan': 'bg-emerald-100 text-emerald-700',
-      'Lainnya': 'bg-gray-100 text-gray-700'
+  // Get category display and color
+  const getCategoryInfo = (category) => {
+    const categories = {
+      'scholarship': { label: 'Beasiswa', color: 'bg-blue-100 text-blue-700' },
+      'research': { label: 'Riset', color: 'bg-purple-100 text-purple-700' },
+      'event': { label: 'Event', color: 'bg-green-100 text-green-700' },
+      'infrastructure': { label: 'Infrastruktur', color: 'bg-orange-100 text-orange-700' },
+      'SCHOLARSHIP': { label: 'Beasiswa', color: 'bg-blue-100 text-blue-700' },
+      'RESEARCH': { label: 'Riset', color: 'bg-purple-100 text-purple-700' },
+      'EVENT': { label: 'Event', color: 'bg-green-100 text-green-700' },
+      'INFRASTRUCTURE': { label: 'Infrastruktur', color: 'bg-orange-100 text-orange-700' },
     };
-    return colors[category] || 'bg-gray-100 text-gray-700';
+    return categories[category] || { label: category, color: 'bg-gray-100 text-gray-700' };
   };
 
-  const percentage = Math.min(campaign.percentage || 0, 100);
+  // Map backend fields to component usage
+  const progress = campaign.progress || 0;
+  const percentage = Math.min(progress, 100);
+  const daysLeft = calculateDaysLeft(campaign.endDate);
+  const donationsCount = campaign.donations?.length || 0;
   const isCompleted = percentage >= 100;
-  const isEnded = campaign.daysLeft === 0;
+  const isEnded = daysLeft === 0;
+  const categoryInfo = getCategoryInfo(campaign.category);
 
   return (
     <Card hover padding="lg" className="relative animate-fade-in">
@@ -49,9 +64,9 @@ const CampaignCard = ({ campaign }) => {
 
       {/* Cover Image */}
       <Link to={`/dashboard/funding/${campaign.id}`}>
-        {campaign.coverImage ? (
+        {campaign.imageUrl ? (
           <img
-            src={campaign.coverImage}
+            src={campaign.imageUrl}
             alt={campaign.title}
             className="w-full h-48 object-cover rounded-xl mb-4"
           />
@@ -66,8 +81,8 @@ const CampaignCard = ({ campaign }) => {
       <div className="space-y-3">
         {/* Category */}
         <div className="flex items-center justify-between">
-          <span className={`px-3 py-1 rounded-full text-xs font-bold ${getCategoryColor(campaign.category)}`}>
-            {campaign.category}
+          <span className={`px-3 py-1 rounded-full text-xs font-bold ${categoryInfo.color}`}>
+            {categoryInfo.label}
           </span>
           {isCompleted && (
             <Badge variant="success" icon={<TrendingUp className="w-3 h-3" />}>
@@ -92,23 +107,22 @@ const CampaignCard = ({ campaign }) => {
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
             <span className="font-bold text-dark-900">
-              {formatAmount(campaign.currentAmount, campaign.currency)}
+              {formatAmount(campaign.currentAmount)}
             </span>
             <span className="text-dark-500">
-              terkumpul dari {formatAmount(campaign.goalAmount, campaign.currency)}
+              terkumpul dari {formatAmount(campaign.targetAmount)}
             </span>
           </div>
           <div className="w-full h-3 bg-dark-100 rounded-full overflow-hidden">
             <div
-              className={`h-full rounded-full transition-all duration-300 ${
-                isCompleted ? 'bg-green-500' : 'bg-gradient-primary'
-              }`}
+              className={`h-full rounded-full transition-all duration-300 ${isCompleted ? 'bg-green-500' : 'bg-gradient-primary'
+                }`}
               style={{ width: `${percentage}%` }}
             />
           </div>
           <div className="flex items-center justify-between text-xs text-dark-500">
             <span className="font-semibold">{percentage.toFixed(1)}%</span>
-            <span>{campaign.daysLeft} hari lagi</span>
+            <span>{daysLeft} hari lagi</span>
           </div>
         </div>
 
@@ -117,7 +131,7 @@ const CampaignCard = ({ campaign }) => {
           <div className="flex items-center gap-4 text-sm text-dark-500">
             <div className="flex items-center gap-1">
               <Users className="w-4 h-4" />
-              <span>{campaign.donationsCount} donatur</span>
+              <span>{donationsCount} donatur</span>
             </div>
           </div>
 

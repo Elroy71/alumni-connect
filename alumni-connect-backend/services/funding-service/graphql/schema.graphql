@@ -66,8 +66,8 @@ type Campaign {
     category: CampaignCategory!
     status: CampaignStatus!
     imageUrl: String
-    createdAt: DateTime!
-    updatedAt: DateTime!
+    createdAt: DateTime! @rename(attribute: "created_at")
+    updatedAt: DateTime! @rename(attribute: "updated_at")
     donations: [Donation!]! @hasMany
     updates: [CampaignUpdate!]! @hasMany
     progress: Float!
@@ -99,7 +99,7 @@ type CampaignUpdate {
     campaign: Campaign! @belongsTo
     title: String!
     content: String!
-    createdAt: DateTime!
+    createdAt: DateTime! @rename(attribute: "created_at")
 }
 
 enum CampaignCategory {

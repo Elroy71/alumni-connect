@@ -27,6 +27,40 @@ class Donation extends Model
 
     public $timestamps = false;
 
+    // Append camelCase attributes for GraphQL
+    protected $appends = ['campaignId', 'donorId', 'paymentStatus', 'paymentMethod', 'transactionId', 'donatedAt'];
+
+    // CamelCase accessors for GraphQL
+    public function getCampaignIdAttribute()
+    {
+        return $this->attributes['campaign_id'] ?? null;
+    }
+
+    public function getDonorIdAttribute()
+    {
+        return $this->attributes['donor_id'] ?? null;
+    }
+
+    public function getPaymentStatusAttribute()
+    {
+        return $this->attributes['payment_status'] ?? null;
+    }
+
+    public function getPaymentMethodAttribute()
+    {
+        return $this->attributes['payment_method'] ?? null;
+    }
+
+    public function getTransactionIdAttribute()
+    {
+        return $this->attributes['transaction_id'] ?? null;
+    }
+
+    public function getDonatedAtAttribute()
+    {
+        return $this->attributes['donated_at'] ?? null;
+    }
+
     /**
      * Get the campaign this donation belongs to
      */

@@ -1,36 +1,40 @@
 import React, { useState } from 'react';
 import { useMutation } from '@apollo/client';
 import { useNavigate } from 'react-router-dom';
-import { Heart, DollarSign, FileText, Calendar, User } from 'lucide-react';
+import { Heart, DollarSign, Calendar, ArrowLeft } from 'lucide-react';
 import { CREATE_CAMPAIGN } from '../../graphql/funding.mutations';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 
+// Category options matching backend enum
+const CATEGORIES = [
+  { label: 'Beasiswa', value: 'SCHOLARSHIP' },
+  { label: 'Riset', value: 'RESEARCH' },
+  { label: 'Event', value: 'EVENT' },
+  { label: 'Infrastruktur', value: 'INFRASTRUCTURE' }
+];
+
 const CreateCampaignPage = () => {
   const navigate = useNavigate();
-  const [step, setStep] = useState(1);
-  
+
   const [campaignForm, setCampaignForm] = useState({
     title: '',
     description: '',
-    story: '',
-    coverImage: '',
-    category: 'Pendidikan',
-    goalAmount: '',
-    endDate: '',
-    beneficiary: '',
-    bankAccount: '',
-    phoneNumber: ''
+    imageUrl: '',
+    category: 'SCHOLARSHIP',
+    targetAmount: '',
+    endDate: ''
   });
 
   const [createCampaign, { loading }] = useMutation(CREATE_CAMPAIGN, {
     onCompleted: (data) => {
-      alert('Campaign created successfully!');
+      alert('Campaign berhasil dibuat! Menunggu persetujuan admin.');
       navigate(`/dashboard/funding/${data.createCampaign.id}`);
     },
     onError: (error) => {
-      alert(error.message);
+      console.error('Create campaign error:', error);
+      alert('Gagal membuat campaign: ' + error.message);
     }
   });
 
@@ -38,14 +42,14 @@ const CreateCampaignPage = () => {
     e.preventDefault();
 
     // Validation
-    if (!campaignForm.title || !campaignForm.description || !campaignForm.goalAmount || !campaignForm.endDate) {
-      alert('Please fill all required fields');
+    if (!campaignForm.title || !campaignForm.description || !campaignForm.targetAmount || !campaignForm.endDate) {
+      alert('Mohon isi semua field yang wajib diisi');
       return;
     }
 
-    const goalAmount = parseInt(campaignForm.goalAmount);
-    if (isNaN(goalAmount) || goalAmount <= 0) {
-      alert('Please enter a valid goal amount');
+    const targetAmount = parseFloat(campaignForm.targetAmount);
+    if (isNaN(targetAmount) || targetAmount <= 0) {
+      alert('Mohon masukkan target dana yang valid');
       return;
     }
 
@@ -55,14 +59,10 @@ const CreateCampaignPage = () => {
           input: {
             title: campaignForm.title,
             description: campaignForm.description,
-            story: campaignForm.story || undefined,
-            coverImage: campaignForm.coverImage || undefined,
+            targetAmount: targetAmount,
             category: campaignForm.category,
-            goalAmount,
-            endDate: new Date(campaignForm.endDate).toISOString(),
-            beneficiary: campaignForm.beneficiary || undefined,
-            bankAccount: campaignForm.bankAccount || undefined,
-            phoneNumber: campaignForm.phoneNumber || undefined
+            imageUrl: campaignForm.imageUrl || null,
+            endDate: campaignForm.endDate // YYYY-MM-DD format
           }
         }
       });
@@ -72,240 +72,142 @@ const CreateCampaignPage = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
+    <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
+      {/* Back Button */}
+      <button
+        onClick={() => navigate('/dashboard/funding')}
+        className="flex items-center gap-2 text-dark-600 hover:text-dark-900 transition-colors"
+      >
+        <ArrowLeft className="w-5 h-5" />
+        <span className="font-semibold">Kembali ke Daftar Campaign</span>
+      </button>
+
       {/* Header */}
       <div>
         <h1 className="font-display font-bold text-3xl text-dark-900 mb-2">
-          Create Campaign
+          Buat Campaign Baru
         </h1>
         <p className="text-dark-600">
-          Galang dana untuk mewujudkan impian
+          Galang dana untuk mewujudkan impian bersama alumni
         </p>
       </div>
 
-      {/* Steps */}
-      <div className="flex items-center justify-center gap-4">
-        <div className={`flex items-center gap-2 ${step >= 1 ? 'text-primary-600' : 'text-dark-400'}`}>
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${step >= 1 ? 'bg-primary-600 text-white' : 'bg-dark-200'}`}>
-            1
-          </div>
-          <span className="font-semibold">Basic Info</span>
-        </div>
-        <div className={`w-16 h-1 ${step >= 2 ? 'bg-primary-600' : 'bg-dark-200'}`} />
-        <div className={`flex items-center gap-2 ${step >= 2 ? 'text-primary-600' : 'text-dark-400'}`}>
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${step >= 2 ? 'bg-primary-600 text-white' : 'bg-dark-200'}`}>
-            2
-          </div>
-          <span className="font-semibold">Story</span>
-        </div>
-        <div className={`w-16 h-1 ${step >= 3 ? 'bg-primary-600' : 'bg-dark-200'}`} />
-        <div className={`flex items-center gap-2 ${step >= 3 ? 'text-primary-600' : 'text-dark-400'}`}>
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${step >= 3 ? 'bg-primary-600 text-white' : 'bg-dark-200'}`}>
-            3
-          </div>
-          <span className="font-semibold">Details</span>
-        </div>
+      {/* Info Box */}
+      <div className="p-4 bg-blue-50 border-2 border-blue-200 rounded-xl">
+        <p className="text-sm text-blue-800">
+          <strong>ℹ️ Info:</strong> Campaign yang Anda buat akan memerlukan persetujuan dari Super Admin sebelum dapat dilihat oleh pengguna lain.
+        </p>
       </div>
 
+      {/* Form */}
       <form onSubmit={handleSubmit}>
-        {/* Step 1: Basic Info */}
-        {step === 1 && (
-          <Card padding="lg">
-            <div className="space-y-6">
-              <h2 className="font-display font-bold text-2xl text-dark-900 flex items-center gap-2">
-                <Heart className="w-6 h-6" />
-                Informasi Dasar
-              </h2>
+        <Card padding="lg">
+          <div className="space-y-6">
+            <h2 className="font-display font-bold text-2xl text-dark-900 flex items-center gap-2">
+              <Heart className="w-6 h-6 text-primary-600" />
+              Informasi Campaign
+            </h2>
+
+            {/* Title */}
+            <Input
+              label="Judul Campaign *"
+              value={campaignForm.title}
+              onChange={(e) => setCampaignForm({ ...campaignForm, title: e.target.value })}
+              placeholder="contoh: Beasiswa untuk Mahasiswa Berprestasi"
+              required
+            />
+
+            {/* Description */}
+            <div>
+              <label className="block font-semibold text-dark-900 mb-2">Deskripsi *</label>
+              <textarea
+                value={campaignForm.description}
+                onChange={(e) => setCampaignForm({ ...campaignForm, description: e.target.value })}
+                rows={5}
+                placeholder="Jelaskan tujuan campaign Anda secara detail. Ceritakan latar belakang, siapa yang akan dibantu, dan bagaimana dana akan digunakan..."
+                className="w-full px-4 py-3 rounded-xl border-2 border-dark-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 transition-all resize-none"
+                required
+              />
+            </div>
+
+            {/* Category & Image URL */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block font-semibold text-dark-900 mb-2">Kategori *</label>
+                <select
+                  value={campaignForm.category}
+                  onChange={(e) => setCampaignForm({ ...campaignForm, category: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl border-2 border-dark-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 transition-all"
+                  required
+                >
+                  {CATEGORIES.map((cat) => (
+                    <option key={cat.value} value={cat.value}>
+                      {cat.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
               <Input
-                label="Campaign Title *"
-                value={campaignForm.title}
-                onChange={(e) => setCampaignForm({ ...campaignForm, title: e.target.value })}
-                placeholder="e.g. Bantu Adik Kita Kuliah"
+                label="URL Gambar Cover"
+                value={campaignForm.imageUrl}
+                onChange={(e) => setCampaignForm({ ...campaignForm, imageUrl: e.target.value })}
+                placeholder="https://example.com/image.jpg"
+              />
+            </div>
+
+            {/* Target & Deadline */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label="Target Dana (Rp) *"
+                type="number"
+                value={campaignForm.targetAmount}
+                onChange={(e) => setCampaignForm({ ...campaignForm, targetAmount: e.target.value })}
+                placeholder="10000000"
+                icon={<DollarSign className="w-5 h-5" />}
                 required
               />
 
-              <div>
-                <label className="block font-semibold text-dark-900 mb-2">Deskripsi Singkat *</label>
-                <textarea
-                  value={campaignForm.description}
-                  onChange={(e) => setCampaignForm({ ...campaignForm, description: e.target.value })}
-                  rows={4}
-                  placeholder="Jelaskan campaign Anda dalam 2-3 kalimat..."
-                  className="w-full px-4 py-3 rounded-xl border-2 border-dark-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 transition-all resize-none"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block font-semibold text-dark-900 mb-2">Kategori *</label>
-                  <select
-                    value={campaignForm.category}
-                    onChange={(e) => setCampaignForm({ ...campaignForm, category: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl border-2 border-dark-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 transition-all"
-                    required
-                  >
-                    <option value="Pendidikan">Pendidikan</option>
-                    <option value="Kesehatan">Kesehatan</option>
-                    <option value="Bencana">Bencana</option>
-                    <option value="Sosial">Sosial</option>
-                    <option value="Bisnis">Bisnis</option>
-                    <option value="Teknologi">Teknologi</option>
-                    <option value="Lingkungan">Lingkungan</option>
-                    <option value="Lainnya">Lainnya</option>
-                  </select>
-                </div>
-
-                <Input
-                  label="Cover Image URL"
-                  value={campaignForm.coverImage}
-                  onChange={(e) => setCampaignForm({ ...campaignForm, coverImage: e.target.value })}
-                  placeholder="https://..."
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input
-                  label="Target Dana (IDR) *"
-                  type="number"
-                  value={campaignForm.goalAmount}
-                  onChange={(e) => setCampaignForm({ ...campaignForm, goalAmount: e.target.value })}
-                  placeholder="10000000"
-                  icon={<DollarSign className="w-5 h-5" />}
-                  required
-                />
-
-                <Input
-                  label="Deadline *"
-                  type="date"
-                  value={campaignForm.endDate}
-                  onChange={(e) => setCampaignForm({ ...campaignForm, endDate: e.target.value })}
-                  icon={<Calendar className="w-5 h-5" />}
-                  required
-                />
-              </div>
-
-              <div className="flex justify-end">
-                <Button
-                  type="button"
-                  variant="primary"
-                  size="lg"
-                  onClick={() => setStep(2)}
-                >
-                  Next Step →
-                </Button>
-              </div>
-            </div>
-          </Card>
-        )}
-
-        {/* Step 2: Story */}
-        {step === 2 && (
-          <Card padding="lg">
-            <div className="space-y-6">
-              <h2 className="font-display font-bold text-2xl text-dark-900 flex items-center gap-2">
-                <FileText className="w-6 h-6" />
-                Cerita Campaign
-              </h2>
-
-              <div>
-                <label className="block font-semibold text-dark-900 mb-2">
-                  Cerita Lengkap (Optional tapi sangat direkomendasikan)
-                </label>
-                <textarea
-                  value={campaignForm.story}
-                  onChange={(e) => setCampaignForm({ ...campaignForm, story: e.target.value })}
-                  rows={12}
-                  placeholder="Ceritakan secara detail:&#10;- Latar belakang masalah&#10;- Siapa yang akan dibantu&#10;- Mengapa dana ini penting&#10;- Bagaimana dana akan digunakan&#10;- Dampak yang diharapkan"
-                  className="w-full px-4 py-3 rounded-xl border-2 border-dark-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 transition-all resize-none"
-                />
-                <p className="text-sm text-dark-500 mt-2">
-                  💡 Tip: Cerita yang menyentuh hati akan meningkatkan kesuksesan campaign hingga 80%!
-                </p>
-              </div>
-
-              <div className="flex justify-between">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="lg"
-                  onClick={() => setStep(1)}
-                >
-                  ← Back
-                </Button>
-                <Button
-                  type="button"
-                  variant="primary"
-                  size="lg"
-                  onClick={() => setStep(3)}
-                >
-                  Next Step →
-                </Button>
-              </div>
-            </div>
-          </Card>
-        )}
-
-        {/* Step 3: Additional Details */}
-        {step === 3 && (
-          <Card padding="lg">
-            <div className="space-y-6">
-              <h2 className="font-display font-bold text-2xl text-dark-900 flex items-center gap-2">
-                <User className="w-6 h-6" />
-                Informasi Tambahan
-              </h2>
-
               <Input
-                label="Penerima Manfaat (Optional)"
-                value={campaignForm.beneficiary}
-                onChange={(e) => setCampaignForm({ ...campaignForm, beneficiary: e.target.value })}
-                placeholder="e.g. Siti Aminah"
+                label="Batas Waktu *"
+                type="date"
+                value={campaignForm.endDate}
+                onChange={(e) => setCampaignForm({ ...campaignForm, endDate: e.target.value })}
+                icon={<Calendar className="w-5 h-5" />}
+                required
               />
-
-              <Input
-                label="Nomor Rekening (Optional)"
-                value={campaignForm.bankAccount}
-                onChange={(e) => setCampaignForm({ ...campaignForm, bankAccount: e.target.value })}
-                placeholder="BCA 1234567890"
-              />
-
-              <Input
-                label="Nomor WhatsApp (Optional)"
-                value={campaignForm.phoneNumber}
-                onChange={(e) => setCampaignForm({ ...campaignForm, phoneNumber: e.target.value })}
-                placeholder="08123456789"
-              />
-
-              <div className="p-4 bg-yellow-50 border-2 border-yellow-200 rounded-xl">
-                <p className="text-sm text-yellow-800">
-                  <strong>⚠️ Penting:</strong> Pastikan informasi rekening dan kontak yang Anda berikan benar. 
-                  Dana yang terkumpul akan ditransfer ke rekening ini setelah verifikasi.
-                </p>
-              </div>
-
-              <div className="flex justify-between">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="lg"
-                  onClick={() => setStep(2)}
-                >
-                  ← Back
-                </Button>
-                <Button
-                  type="submit"
-                  variant="primary"
-                  size="lg"
-                  loading={loading}
-                  disabled={loading}
-                >
-                  {loading ? 'Creating...' : 'Create Campaign'}
-                </Button>
-              </div>
             </div>
-          </Card>
-        )}
+
+            {/* Warning */}
+            <div className="p-4 bg-yellow-50 border-2 border-yellow-200 rounded-xl">
+              <p className="text-sm text-yellow-800">
+                <strong>⚠️ Penting:</strong> Pastikan informasi yang Anda berikan benar dan dapat dipertanggungjawabkan.
+                Dana yang terkumpul akan diverifikasi oleh admin sebelum dicairkan.
+              </p>
+            </div>
+
+            {/* Submit Button */}
+            <div className="flex justify-end gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                onClick={() => navigate('/dashboard/funding')}
+              >
+                Batal
+              </Button>
+              <Button
+                type="submit"
+                variant="primary"
+                size="lg"
+                loading={loading}
+                disabled={loading}
+              >
+                {loading ? 'Membuat Campaign...' : 'Buat Campaign'}
+              </Button>
+            </div>
+          </div>
+        </Card>
       </form>
     </div>
   );

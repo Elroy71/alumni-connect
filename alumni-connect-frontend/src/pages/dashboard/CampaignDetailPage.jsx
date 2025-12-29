@@ -5,20 +5,39 @@ import {
   ArrowLeft,
   Heart,
   Users,
-  Clock,
   TrendingUp,
-  User as UserIcon,
-  CheckCircle,
   X,
-  DollarSign,
-  Calendar
+  Calendar,
+  Tag,
+  Clock
 } from 'lucide-react';
-import { GET_CAMPAIGN, GET_PUBLIC_DONATIONS } from '../../graphql/funding.queries';
-import { CREATE_DONATION } from '../../graphql/funding.mutations';
+import { GET_CAMPAIGN, GET_CAMPAIGN_DONATIONS } from '../../graphql/funding.queries';
+import { DONATE_TO_CAMPAIGN } from '../../graphql/funding.mutations';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import Input from '../../components/ui/Input';
+
+// Category display mapping
+const CATEGORY_LABELS = {
+  'scholarship': 'Beasiswa',
+  'research': 'Riset',
+  'event': 'Event',
+  'infrastructure': 'Infrastruktur',
+  'SCHOLARSHIP': 'Beasiswa',
+  'RESEARCH': 'Riset',
+  'EVENT': 'Event',
+  'INFRASTRUCTURE': 'Infrastruktur'
+};
+
+// Status display mapping
+const STATUS_LABELS = {
+  'pending_approval': { label: 'Menunggu Persetujuan', variant: 'warning' },
+  'active': { label: 'Aktif', variant: 'success' },
+  'completed': { label: 'Selesai', variant: 'primary' },
+  'cancelled': { label: 'Dibatalkan', variant: 'danger' },
+  'rejected': { label: 'Ditolak', variant: 'danger' }
+};
 
 const CampaignDetailPage = () => {
   const { id } = useParams();
@@ -26,73 +45,80 @@ const CampaignDetailPage = () => {
   const [showDonateModal, setShowDonateModal] = useState(false);
   const [donateForm, setDonateForm] = useState({
     amount: '',
-    message: '',
-    isAnonymous: false,
-    paymentProof: ''
+    message: ''
   });
 
   const { data, loading, refetch } = useQuery(GET_CAMPAIGN, {
     variables: { id }
   });
 
-  const { data: donationsData } = useQuery(GET_PUBLIC_DONATIONS, {
+  const { data: donationsData } = useQuery(GET_CAMPAIGN_DONATIONS, {
     variables: { campaignId: id }
   });
 
-  const [createDonation, { loading: donateLoading }] = useMutation(CREATE_DONATION, {
+  const [donateToCampaign, { loading: donateLoading }] = useMutation(DONATE_TO_CAMPAIGN, {
     onCompleted: () => {
       setShowDonateModal(false);
-      setDonateForm({ amount: '', message: '', isAnonymous: false, paymentProof: '' });
+      setDonateForm({ amount: '', message: '' });
       refetch();
-      alert('Donation submitted! Waiting for verification.');
+      alert('Donasi berhasil! Terima kasih atas kontribusi Anda.');
     },
     onError: (error) => {
-      alert(error.message);
+      console.error('Donate error:', error);
+      alert('Gagal melakukan donasi: ' + error.message);
     }
   });
 
   const campaign = data?.campaign;
-  const donations = donationsData?.publicDonations || [];
+  const donations = donationsData?.campaignDonations || campaign?.donations || [];
+
+  // Helper functions
+  const calculateDaysLeft = (endDate) => {
+    if (!endDate) return 0;
+    const end = new Date(endDate);
+    const now = new Date();
+    const diffTime = end - now;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return Math.max(diffDays, 0);
+  };
+
+  const formatAmount = (amount) => {
+    if (!amount) return 'Rp 0';
+    return `Rp ${new Intl.NumberFormat('id-ID').format(amount)}`;
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+  };
 
   const handleDonate = async (e) => {
     e.preventDefault();
 
-    const amount = parseInt(donateForm.amount);
+    const amount = parseFloat(donateForm.amount);
     if (isNaN(amount) || amount <= 0) {
-      alert('Please enter a valid amount');
+      alert('Mohon masukkan jumlah donasi yang valid');
       return;
     }
 
     try {
-      await createDonation({
+      await donateToCampaign({
         variables: {
-          campaignId: id,
           input: {
-            amount,
-            message: donateForm.message || undefined,
-            isAnonymous: donateForm.isAnonymous,
-            paymentProof: donateForm.paymentProof || undefined
+            campaignId: id,
+            amount: amount,
+            message: donateForm.message || null,
+            paymentMethod: 'transfer'
           }
         }
       });
     } catch (error) {
       console.error('Donate error:', error);
     }
-  };
-
-  const formatAmount = (amount, currency) => {
-    if (currency === 'IDR') {
-      return `Rp ${new Intl.NumberFormat('id-ID').format(amount)}`;
-    }
-    return `$${new Intl.NumberFormat('en-US').format(amount)}`;
-  };
-
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('id-ID', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    });
   };
 
   if (loading) {
@@ -106,18 +132,23 @@ const CampaignDetailPage = () => {
   if (!campaign) {
     return (
       <Card padding="xl" className="text-center">
-        <h2 className="font-bold text-xl text-dark-900 mb-2">Campaign Not Found</h2>
-        <p className="text-dark-600 mb-4">The campaign you're looking for doesn't exist.</p>
+        <h2 className="font-bold text-xl text-dark-900 mb-2">Campaign Tidak Ditemukan</h2>
+        <p className="text-dark-600 mb-4">Campaign yang Anda cari tidak ada atau telah dihapus.</p>
         <Link to="/dashboard/funding">
-          <Button variant="primary">Back to Campaigns</Button>
+          <Button variant="primary">Kembali ke Daftar Campaign</Button>
         </Link>
       </Card>
     );
   }
 
-  const percentage = Math.min(campaign.percentage || 0, 100);
+  const progress = campaign.progress || 0;
+  const percentage = Math.min(progress, 100);
+  const daysLeft = calculateDaysLeft(campaign.endDate);
+  const donationsCount = donations.length;
   const isCompleted = percentage >= 100;
-  const isEnded = campaign.daysLeft === 0;
+  const isEnded = daysLeft === 0;
+  const canDonate = campaign.status === 'active' && !isEnded;
+  const statusInfo = STATUS_LABELS[campaign.status] || { label: campaign.status, variant: 'default' };
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
@@ -127,14 +158,14 @@ const CampaignDetailPage = () => {
         className="flex items-center gap-2 text-dark-600 hover:text-dark-900 transition-colors"
       >
         <ArrowLeft className="w-5 h-5" />
-        <span className="font-semibold">Back to Campaigns</span>
+        <span className="font-semibold">Kembali ke Daftar Campaign</span>
       </button>
 
       {/* Cover Image */}
-      {campaign.coverImage && (
+      {campaign.imageUrl && (
         <div className="w-full h-96 rounded-2xl overflow-hidden">
           <img
-            src={campaign.coverImage}
+            src={campaign.imageUrl}
             alt={campaign.title}
             className="w-full h-full object-cover"
           />
@@ -148,39 +179,63 @@ const CampaignDetailPage = () => {
           {/* Header */}
           <Card padding="lg">
             <div className="space-y-4">
-              <Badge variant="primary">{campaign.category}</Badge>
-              
+              <div className="flex items-center gap-3 flex-wrap">
+                <Badge variant="primary">
+                  {CATEGORY_LABELS[campaign.category] || campaign.category}
+                </Badge>
+                <Badge variant={statusInfo.variant}>
+                  {statusInfo.label}
+                </Badge>
+              </div>
+
               <h1 className="font-display font-bold text-3xl text-dark-900">
                 {campaign.title}
               </h1>
 
-              <p className="text-dark-700 text-lg">
+              <p className="text-dark-700 text-lg whitespace-pre-wrap">
                 {campaign.description}
               </p>
+
+              {/* Rejection reason if rejected */}
+              {campaign.status === 'rejected' && campaign.rejectionReason && (
+                <div className="p-4 bg-red-50 border-2 border-red-200 rounded-xl">
+                  <p className="text-sm text-red-800">
+                    <strong>Alasan Penolakan:</strong> {campaign.rejectionReason}
+                  </p>
+                </div>
+              )}
+
+              {/* Pending approval notice */}
+              {campaign.status === 'pending_approval' && (
+                <div className="p-4 bg-yellow-50 border-2 border-yellow-200 rounded-xl">
+                  <p className="text-sm text-yellow-800">
+                    <strong>⏳ Menunggu Persetujuan:</strong> Campaign ini sedang menunggu persetujuan dari Super Admin.
+                  </p>
+                </div>
+              )}
 
               {/* Progress */}
               <div className="space-y-3 pt-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-3xl font-bold text-dark-900">
-                      {formatAmount(campaign.currentAmount, campaign.currency)}
+                      {formatAmount(campaign.currentAmount)}
                     </p>
                     <p className="text-sm text-dark-500">
-                      terkumpul dari {formatAmount(campaign.goalAmount, campaign.currency)}
+                      terkumpul dari {formatAmount(campaign.targetAmount)}
                     </p>
                   </div>
                   {isCompleted && (
                     <Badge variant="success" icon={<TrendingUp className="w-4 h-4" />}>
-                      FUNDED!
+                      TERCAPAI!
                     </Badge>
                   )}
                 </div>
 
                 <div className="w-full h-4 bg-dark-100 rounded-full overflow-hidden">
                   <div
-                    className={`h-full rounded-full transition-all duration-300 ${
-                      isCompleted ? 'bg-green-500' : 'bg-gradient-primary'
-                    }`}
+                    className={`h-full rounded-full transition-all duration-300 ${isCompleted ? 'bg-green-500' : 'bg-gradient-primary'
+                      }`}
                     style={{ width: `${percentage}%` }}
                   />
                 </div>
@@ -191,11 +246,11 @@ const CampaignDetailPage = () => {
                     <p className="text-sm text-dark-500">Terkumpul</p>
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-primary-600">{campaign.donationsCount}</p>
+                    <p className="text-2xl font-bold text-primary-600">{donationsCount}</p>
                     <p className="text-sm text-dark-500">Donatur</p>
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-primary-600">{campaign.daysLeft}</p>
+                    <p className="text-2xl font-bold text-primary-600">{daysLeft}</p>
                     <p className="text-sm text-dark-500">Hari Lagi</p>
                   </div>
                 </div>
@@ -203,22 +258,28 @@ const CampaignDetailPage = () => {
             </div>
           </Card>
 
-          {/* Story */}
-          {campaign.story && (
+          {/* Campaign Updates */}
+          {campaign.updates && campaign.updates.length > 0 && (
             <Card padding="lg">
               <h2 className="font-display font-bold text-2xl text-dark-900 mb-4">
-                Cerita Campaign
+                Update Campaign
               </h2>
-              <p className="text-dark-700 whitespace-pre-wrap leading-relaxed">
-                {campaign.story}
-              </p>
+              <div className="space-y-4">
+                {campaign.updates.map((update) => (
+                  <div key={update.id} className="p-4 bg-dark-50 rounded-xl">
+                    <h3 className="font-semibold text-dark-900">{update.title}</h3>
+                    <p className="text-sm text-dark-600 mt-2">{update.content}</p>
+                    <p className="text-xs text-dark-500 mt-2">{formatDate(update.createdAt)}</p>
+                  </div>
+                ))}
+              </div>
             </Card>
           )}
 
           {/* Donors */}
           <Card padding="lg">
             <h2 className="font-display font-bold text-2xl text-dark-900 mb-4">
-              Donatur ({donations.length})
+              Donatur ({donationsCount})
             </h2>
             {donations.length === 0 ? (
               <p className="text-center text-dark-500 py-8">Belum ada donatur</p>
@@ -227,15 +288,15 @@ const CampaignDetailPage = () => {
                 {donations.map((donation) => (
                   <div key={donation.id} className="flex items-start gap-3 p-4 bg-dark-50 rounded-xl">
                     <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-white font-bold flex-shrink-0">
-                      {donation.donor?.profile?.fullName?.charAt(0) || 'A'}
+                      {donation.donorId?.charAt(0)?.toUpperCase() || 'A'}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-1">
                         <p className="font-semibold text-dark-900">
-                          {donation.donor?.profile?.fullName || 'Anonymous'}
+                          Donatur #{donation.donorId?.slice(-4) || 'Anonim'}
                         </p>
                         <p className="font-bold text-primary-600">
-                          {formatAmount(donation.amount, donation.currency)}
+                          {formatAmount(donation.amount)}
                         </p>
                       </div>
                       {donation.message && (
@@ -257,7 +318,7 @@ const CampaignDetailPage = () => {
           {/* Donate Card */}
           <Card padding="lg" className="sticky top-6">
             <div className="space-y-4">
-              {!isEnded ? (
+              {canDonate ? (
                 <Button
                   variant="primary"
                   size="lg"
@@ -269,7 +330,11 @@ const CampaignDetailPage = () => {
                 </Button>
               ) : (
                 <Button variant="outline" size="lg" fullWidth disabled>
-                  Campaign Berakhir
+                  {campaign.status === 'pending_approval'
+                    ? 'Menunggu Persetujuan'
+                    : isEnded
+                      ? 'Campaign Berakhir'
+                      : 'Tidak Dapat Donasi'}
                 </Button>
               )}
             </div>
@@ -277,42 +342,32 @@ const CampaignDetailPage = () => {
 
           {/* Campaign Info */}
           <Card padding="lg">
-            <h3 className="font-bold text-lg text-dark-900 mb-4">Campaign Details</h3>
+            <h3 className="font-bold text-lg text-dark-900 mb-4">Detail Campaign</h3>
             <div className="space-y-3">
+              <div className="flex items-start gap-3">
+                <Tag className="w-5 h-5 text-primary-600 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-dark-900">Kategori</p>
+                  <p className="text-sm text-dark-600">
+                    {CATEGORY_LABELS[campaign.category] || campaign.category}
+                  </p>
+                </div>
+              </div>
+
               <div className="flex items-start gap-3">
                 <Calendar className="w-5 h-5 text-primary-600 mt-0.5" />
                 <div>
-                  <p className="font-semibold text-dark-900">Deadline</p>
+                  <p className="font-semibold text-dark-900">Batas Waktu</p>
                   <p className="text-sm text-dark-600">{formatDate(campaign.endDate)}</p>
                 </div>
               </div>
 
-              {campaign.beneficiary && (
-                <div className="flex items-start gap-3">
-                  <UserIcon className="w-5 h-5 text-primary-600 mt-0.5" />
-                  <div>
-                    <p className="font-semibold text-dark-900">Penerima Manfaat</p>
-                    <p className="text-sm text-dark-600">{campaign.beneficiary}</p>
-                  </div>
+              <div className="flex items-start gap-3">
+                <Clock className="w-5 h-5 text-primary-600 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-dark-900">Dibuat Pada</p>
+                  <p className="text-sm text-dark-600">{formatDate(campaign.createdAt)}</p>
                 </div>
-              )}
-            </div>
-          </Card>
-
-          {/* Creator */}
-          <Card padding="lg">
-            <h3 className="font-bold text-lg text-dark-900 mb-4">Campaign Creator</h3>
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-gradient-secondary flex items-center justify-center text-white font-bold">
-                {campaign.creator?.profile?.fullName?.charAt(0) || 'U'}
-              </div>
-              <div>
-                <p className="font-semibold text-dark-900">
-                  {campaign.creator?.profile?.fullName || 'User'}
-                </p>
-                <p className="text-sm text-dark-600">
-                  {campaign.creator?.profile?.currentPosition || 'Alumni'}
-                </p>
               </div>
             </div>
           </Card>
@@ -338,7 +393,7 @@ const CampaignDetailPage = () => {
             <form onSubmit={handleDonate} className="space-y-6">
               <div>
                 <Input
-                  label="Jumlah Donasi (Rp)"
+                  label="Jumlah Donasi (Rp) *"
                   type="number"
                   value={donateForm.amount}
                   onChange={(e) => setDonateForm({ ...donateForm, amount: e.target.value })}
@@ -361,7 +416,7 @@ const CampaignDetailPage = () => {
 
               <div>
                 <label className="block font-semibold text-dark-900 mb-2">
-                  Pesan Dukungan (Optional)
+                  Pesan Dukungan (Opsional)
                 </label>
                 <textarea
                   value={donateForm.message}
@@ -370,28 +425,6 @@ const CampaignDetailPage = () => {
                   placeholder="Tulis pesan dukungan Anda..."
                   className="w-full px-4 py-3 rounded-xl border-2 border-dark-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 transition-all resize-none"
                 />
-              </div>
-
-              <div>
-                <Input
-                  label="Link Bukti Transfer (Optional)"
-                  value={donateForm.paymentProof}
-                  onChange={(e) => setDonateForm({ ...donateForm, paymentProof: e.target.value })}
-                  placeholder="https://..."
-                />
-              </div>
-
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="anonymous"
-                  checked={donateForm.isAnonymous}
-                  onChange={(e) => setDonateForm({ ...donateForm, isAnonymous: e.target.checked })}
-                  className="w-4 h-4 text-primary-600 rounded focus:ring-2 focus:ring-primary-200"
-                />
-                <label htmlFor="anonymous" className="text-sm text-dark-700">
-                  Donasi sebagai anonim
-                </label>
               </div>
 
               <div className="flex gap-3">
