@@ -254,3 +254,32 @@ export const DELETE_CONTENT = gql`
     deleteContent(contentType: $contentType, contentId: $contentId)
   }
 `;
+
+export const GET_EVENT_HISTORY = gql`
+  query GetEventHistory($pagination: PaginationInput) {
+    getAllEvents(pagination: $pagination) {
+      events {
+        id
+        title
+        description
+        type
+        status
+        startDate
+        endDate
+        location
+        isOnline
+        coverImage
+        createdAt
+        organizer {
+          id
+          email
+          profile {
+            fullName
+            avatar
+          }
+        }
+      }
+      total
+    }
+  }
+`;

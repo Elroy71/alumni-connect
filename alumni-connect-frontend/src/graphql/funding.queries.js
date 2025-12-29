@@ -129,5 +129,29 @@ export const GET_PENDING_CAMPAIGNS = gql`
   }
 `;
 
+export const GET_CAMPAIGN_HISTORY = gql`
+  query GetCampaignHistory {
+    campaignHistory {
+      id
+      userId
+      title
+      description
+      targetAmount
+      currentAmount
+      progress
+      category
+      status
+      imageUrl
+      createdAt
+      updatedAt
+      approvedBy
+      approvedAt
+      rejectedBy
+      rejectedAt
+      rejectionReason
+    }
+  }
+`;
+
 // Alias for backward compatibility
 export const GET_PUBLIC_DONATIONS = GET_CAMPAIGN_DONATIONS;

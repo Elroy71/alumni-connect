@@ -1,96 +1,96 @@
 import React, { useState } from 'react';
 import { Outlet, useNavigate, useLocation, Link } from 'react-router-dom';
 import {
-    LayoutDashboard, Users, Calendar, DollarSign, Briefcase,
-    Settings, LogOut, Menu, X, Bell, Search
+  LayoutDashboard, Users, Calendar, DollarSign, Briefcase,
+  Settings, LogOut, Menu, X, Bell, Search
 } from 'lucide-react';
 import useAuthStore from '../../features/auth/store/authStore';
 
 const AdminLayout = () => {
-    const [sidebarOpen, setSidebarOpen] = useState(true);
-    const navigate = useNavigate();
-    const location = useLocation();
-    const { logout } = useAuthStore();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { logout } = useAuthStore();
 
-    const handleLogout = () => {
-        logout();
-        navigate('/login');
-    };
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
-    const menuItems = [
-        { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
-        { icon: Users, label: 'Kelola User', path: '/admin/users' },
-        { icon: Calendar, label: 'Event Approval', path: '/admin/events' },
-        { icon: DollarSign, label: 'Funding Approval', path: '/admin/funding' },
-    ];
+  const menuItems = [
+    { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
+    { icon: Users, label: 'Kelola User', path: '/admin/users' },
+    { icon: Calendar, label: 'Event Approval', path: '/admin/events' },
+    { icon: DollarSign, label: 'Funding Approval', path: '/admin/funding' },
+  ];
 
-    const isActive = (path) => {
-        if (path === '/admin') {
-            return location.pathname === '/admin';
-        }
-        return location.pathname.startsWith(path);
-    };
+  const isActive = (path) => {
+    if (path === '/admin') {
+      return location.pathname === '/admin';
+    }
+    return location.pathname.startsWith(path);
+  };
 
-    return (
-        <div className="admin-layout">
-            {/* Sidebar */}
-            <aside className={`admin-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
-                <div className="sidebar-header">
-                    <div className="logo">
-                        <div className="logo-icon">🎓</div>
-                        {sidebarOpen && <span className="logo-text">AlumniConnect Admin</span>}
-                    </div>
-                    <button
-                        className="sidebar-toggle"
-                        onClick={() => setSidebarOpen(!sidebarOpen)}
-                    >
-                        {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
-                    </button>
-                </div>
+  return (
+    <div className="admin-layout">
+      {/* Sidebar */}
+      <aside className={`admin-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
+        <div className="sidebar-header">
+          <div className="logo">
+            <div className="logo-icon">🎓</div>
+            {sidebarOpen && <span className="logo-text">AlumniConnect Admin</span>}
+          </div>
+          <button
+            className="sidebar-toggle"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+          >
+            {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+        </div>
 
-                <nav className="sidebar-nav">
-                    {menuItems.map((item) => (
-                        <Link
-                            key={item.path}
-                            to={item.path}
-                            className={`nav-item ${isActive(item.path) ? 'active' : ''}`}
-                        >
-                            <item.icon size={20} />
-                            {sidebarOpen && <span>{item.label}</span>}
-                        </Link>
-                    ))}
-                </nav>
+        <nav className="sidebar-nav">
+          {menuItems.map((item) => (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={`nav-item ${isActive(item.path) ? 'active' : ''}`}
+            >
+              <item.icon size={20} />
+              {sidebarOpen && <span>{item.label}</span>}
+            </Link>
+          ))}
+        </nav>
 
-                <div className="sidebar-footer">
-                    <button className="logout-btn" onClick={handleLogout}>
-                        <LogOut size={20} />
-                        {sidebarOpen && <span>Keluar</span>}
-                    </button>
-                </div>
-            </aside>
+        <div className="sidebar-footer">
+          <button className="logout-btn" onClick={handleLogout}>
+            <LogOut size={20} />
+            {sidebarOpen && <span>Keluar</span>}
+          </button>
+        </div>
+      </aside>
 
-            {/* Main Content */}
-            <div className="admin-main">
-                <header className="admin-header">
-                    <div className="header-left">
-                        <h1 className="page-title">
-                            {menuItems.find(item => isActive(item.path))?.label || 'Dashboard'}
-                        </h1>
-                    </div>
-                    <div className="header-right">
-                        <div className="header-profile">
-                            <div className="profile-avatar">SA</div>
-                            <span className="profile-name">Super Admin</span>
-                        </div>
-                    </div>
-                </header>
-
-                <main className="admin-content">
-                    <Outlet />
-                </main>
+      {/* Main Content */}
+      <div className="admin-main">
+        <header className="admin-header">
+          <div className="header-left">
+            <h1 className="page-title">
+              {menuItems.find(item => isActive(item.path))?.label || 'Dashboard'}
+            </h1>
+          </div>
+          <div className="header-right">
+            <div className="header-profile">
+              <div className="profile-avatar">SA</div>
+              <span className="profile-name">Super Admin</span>
             </div>
+          </div>
+        </header>
 
-            <style jsx>{`
+        <main className="admin-content">
+          <Outlet />
+        </main>
+      </div>
+
+      <style jsx>{`
         .admin-layout {
           display: flex;
           min-height: 100vh;
@@ -315,8 +315,8 @@ const AdminLayout = () => {
           }
         }
       `}</style>
-        </div>
-    );
+    </div>
+  );
 };
 
 export default AdminLayout;

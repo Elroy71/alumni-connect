@@ -11,12 +11,43 @@ class AdminQueries
      */
     public function pendingCampaigns($root, array $args, $context)
     {
-        // Note: In production, you should check if user is admin here
-        // For now, we rely on @guard directive and admin check in middleware
-        
         return Campaign::where('status', 'pending_approval')
             ->with(['donations', 'updates'])
             ->orderBy('created_at', 'desc')
+            ->get();
+    }
+
+    /**
+     * Get all approved/active campaigns
+     */
+    public function approvedCampaigns($root, array $args, $context)
+    {
+        return Campaign::whereIn('status', ['active', 'completed'])
+            ->whereNotNull('approved_at')
+            ->with(['donations', 'updates'])
+            ->orderBy('approved_at', 'desc')
+            ->get();
+    }
+
+    /**
+     * Get all rejected campaigns
+     */
+    public function rejectedCampaigns($root, array $args, $context)
+    {
+        return Campaign::where('status', 'rejected')
+            ->with(['donations', 'updates'])
+            ->orderBy('rejected_at', 'desc')
+            ->get();
+    }
+
+    /**
+     * Get all campaign history (approved and rejected)
+     */
+    public function campaignHistory($root, array $args, $context)
+    {
+        return Campaign::whereIn('status', ['active', 'completed', 'rejected'])
+            ->with(['donations', 'updates'])
+            ->orderBy('updated_at', 'desc')
             ->get();
     }
 }

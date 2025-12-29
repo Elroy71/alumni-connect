@@ -34,8 +34,6 @@ import UserManagement from './pages/Admin/UserManagement';
 import EventApproval from './pages/Admin/EventApproval';
 import FundingApproval from './pages/Admin/FundingApproval';
 
-
-
 function App() {
   const { isAuthenticated, user } = useAuthStore();
 

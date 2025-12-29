@@ -21,6 +21,9 @@ type Query {
     
     # Admin queries
     pendingCampaigns: [Campaign!]! @field(resolver: "App\\GraphQL\\Queries\\AdminQueries@pendingCampaigns") @guard
+    approvedCampaigns: [Campaign!]! @field(resolver: "App\\GraphQL\\Queries\\AdminQueries@approvedCampaigns") @guard
+    rejectedCampaigns: [Campaign!]! @field(resolver: "App\\GraphQL\\Queries\\AdminQueries@rejectedCampaigns") @guard
+    campaignHistory: [Campaign!]! @field(resolver: "App\\GraphQL\\Queries\\AdminQueries@campaignHistory") @guard
 }
 
 type Mutation {
