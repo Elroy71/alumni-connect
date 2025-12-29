@@ -86,8 +86,8 @@ export const GET_ALL_USERS = gql`
 `;
 
 export const GET_PENDING_EVENTS = gql`
-  query GetPendingEvents($pagination: PaginationInput) {
-    getPendingEvents(pagination: $pagination) {
+  query GetPendingEvents {
+    events(filter: { limit: 100 }) {
       events {
         id
         title
@@ -100,37 +100,32 @@ export const GET_PENDING_EVENTS = gql`
         isOnline
         coverImage
         createdAt
-        organizer {
-          id
-          email
-          profile {
-            fullName
-            avatar
-          }
-        }
+        organizerId
       }
-      total
+      pagination {
+        total
+      }
     }
   }
 `;
 
 export const GET_ALL_EVENTS = gql`
-  query GetAllEvents($filter: ContentFilterInput, $pagination: PaginationInput) {
-    getAllEvents(filter: $filter, pagination: $pagination) {
+  query GetAllEvents {
+    events(filter: { limit: 100 }) {
       events {
         id
         title
         type
         status
         startDate
+        location
+        coverImage
         createdAt
-        organizer {
-          profile {
-            fullName
-          }
-        }
+        organizerId
       }
-      total
+      pagination {
+        total
+      }
     }
   }
 `;
@@ -256,8 +251,8 @@ export const DELETE_CONTENT = gql`
 `;
 
 export const GET_EVENT_HISTORY = gql`
-  query GetEventHistory($pagination: PaginationInput) {
-    getAllEvents(pagination: $pagination) {
+  query GetEventHistory {
+    events(filter: { status: null, limit: 100 }) {
       events {
         id
         title
@@ -270,16 +265,11 @@ export const GET_EVENT_HISTORY = gql`
         isOnline
         coverImage
         createdAt
-        organizer {
-          id
-          email
-          profile {
-            fullName
-            avatar
-          }
-        }
+        organizerId
       }
-      total
+      pagination {
+        total
+      }
     }
   }
 `;

@@ -16,10 +16,12 @@ class EventType(Enum):
 @strawberry.enum
 class EventStatus(Enum):
     DRAFT = "DRAFT"
+    PENDING_APPROVAL = "PENDING_APPROVAL"
     PUBLISHED = "PUBLISHED"
     ONGOING = "ONGOING"
     COMPLETED = "COMPLETED"
     CANCELLED = "CANCELLED"
+    REJECTED = "REJECTED"
 
 @strawberry.enum
 class RegistrationStatus(Enum):
@@ -134,7 +136,7 @@ class RegisterEventInput:
 class EventFilterInput:
     search: Optional[str] = None
     type: Optional[EventType] = None
-    status: Optional[EventStatus] = EventStatus.PUBLISHED
+    status: Optional[EventStatus] = None
     isOnline: Optional[bool] = None
     organizerId: Optional[str] = None
     upcoming: bool = False

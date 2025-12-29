@@ -17,10 +17,12 @@ class EventType(str, enum.Enum):
 
 class EventStatus(str, enum.Enum):
     DRAFT = "DRAFT"
+    PENDING_APPROVAL = "PENDING_APPROVAL"
     PUBLISHED = "PUBLISHED"
     ONGOING = "ONGOING"
     COMPLETED = "COMPLETED"
     CANCELLED = "CANCELLED"
+    REJECTED = "REJECTED"
 
 class RegistrationStatus(str, enum.Enum):
     REGISTERED = "REGISTERED"

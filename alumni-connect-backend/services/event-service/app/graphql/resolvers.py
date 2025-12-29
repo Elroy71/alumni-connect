@@ -490,6 +490,119 @@ class Mutation:
         finally:
             db.close()
 
+    @strawberry.mutation
+    def approveEvent(
+        self,
+        eventId: strawberry.ID,
+        info: strawberry.Info = None
+    ) -> Event:
+        db: Session = next(get_db())
+        user = get_current_user(info)
+        
+        if not user:
+            raise Exception("Not authenticated")
+        
+        try:
+            event = db.query(EventModel).filter(EventModel.id == str(eventId)).first()
+            if not event:
+                raise Exception("Event not found")
+            
+            event.status = 'PUBLISHED'
+            db.commit()
+            db.refresh(event)
+            
+            return Event(
+                id=event.id,
+                organizerId=event.organizerId,
+                title=event.title,
+                description=event.description,
+                type=event.type,
+                status=event.status,
+                coverImage=event.coverImage,
+                startDate=event.startDate,
+                endDate=event.endDate,
+                location=event.location,
+                isOnline=event.isOnline,
+                meetingUrl=event.meetingUrl,
+                capacity=event.capacity,
+                currentAttendees=event.currentAttendees or 0,
+                price=event.price or 0,
+                currency=event.currency or "IDR",
+                tags=event.tags or [],
+                requirements=event.requirements,
+                agenda=event.agenda,
+                speakers=event.speakers,
+                viewCount=event.viewCount or 0,
+                createdAt=event.createdAt,
+                updatedAt=event.updatedAt,
+                registrationsCount=0,
+                hasRegistered=False,
+                isFull=False,
+                daysLeft=0
+            )
+        except Exception as e:
+            db.rollback()
+            raise e
+        finally:
+            db.close()
+
+    @strawberry.mutation
+    def rejectEvent(
+        self,
+        eventId: strawberry.ID,
+        reason: str,
+        info: strawberry.Info = None
+    ) -> Event:
+        db: Session = next(get_db())
+        user = get_current_user(info)
+        
+        if not user:
+            raise Exception("Not authenticated")
+        
+        try:
+            event = db.query(EventModel).filter(EventModel.id == str(eventId)).first()
+            if not event:
+                raise Exception("Event not found")
+            
+            event.status = 'REJECTED'
+            db.commit()
+            db.refresh(event)
+            
+            return Event(
+                id=event.id,
+                organizerId=event.organizerId,
+                title=event.title,
+                description=event.description,
+                type=event.type,
+                status=event.status,
+                coverImage=event.coverImage,
+                startDate=event.startDate,
+                endDate=event.endDate,
+                location=event.location,
+                isOnline=event.isOnline,
+                meetingUrl=event.meetingUrl,
+                capacity=event.capacity,
+                currentAttendees=event.currentAttendees or 0,
+                price=event.price or 0,
+                currency=event.currency or "IDR",
+                tags=event.tags or [],
+                requirements=event.requirements,
+                agenda=event.agenda,
+                speakers=event.speakers,
+                viewCount=event.viewCount or 0,
+                createdAt=event.createdAt,
+                updatedAt=event.updatedAt,
+                registrationsCount=0,
+                hasRegistered=False,
+                isFull=False,
+                daysLeft=0
+            )
+        except Exception as e:
+            db.rollback()
+            raise e
+        finally:
+            db.close()
+
 # ✅ FIXED: Create schema without federation
 schema = strawberry.Schema(
     query=Query,

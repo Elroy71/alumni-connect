@@ -31,11 +31,11 @@ const EventApproval = () => {
   const [showHistory, setShowHistory] = useState(true);
 
   const { data: pendingData, loading: loadingPending, refetch: refetchPending } = useQuery(GET_PENDING_EVENTS, {
-    variables: { pagination: { skip: 0, take: 50 } }
+    fetchPolicy: 'network-only'
   });
 
   const { data: historyData, loading: loadingHistory, refetch: refetchHistory } = useQuery(GET_EVENT_HISTORY, {
-    variables: { pagination: { skip: 0, take: 100 } }
+    fetchPolicy: 'network-only'
   });
 
   const [approveEvent] = useMutation(APPROVE_EVENT, {
@@ -107,10 +107,23 @@ const EventApproval = () => {
     });
   };
 
-  const pendingEvents = pendingData?.getPendingEvents?.events || [];
+  // Get all events from both queries and combine
+  const allEventsFromPending = pendingData?.events?.events || [];
+  const allEventsFromHistory = historyData?.events?.events || [];
 
-  // Filter history to exclude pending events
-  const allEvents = historyData?.getAllEvents?.events || [];
+  // Combine and deduplicate by ID
+  const allEventsMap = new Map();
+  [...allEventsFromPending, ...allEventsFromHistory].forEach(e => {
+    if (!allEventsMap.has(e.id)) {
+      allEventsMap.set(e.id, e);
+    }
+  });
+  const allEvents = Array.from(allEventsMap.values());
+
+  // Filter pending events (PENDING_APPROVAL only)
+  const pendingEvents = allEvents.filter(e => e.status === 'PENDING_APPROVAL');
+
+  // Filter history events (exclude pending and draft)
   const historyEvents = allEvents.filter(e =>
     e.status !== 'PENDING_APPROVAL' && e.status !== 'DRAFT'
   );
