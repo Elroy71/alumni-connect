@@ -1,0 +1,161 @@
+# AlumniConnect Docker Compose Configuration
+# Run with: docker-compose up --build
+
+version: '3.8'
+
+services:
+  # ==================== DATABASE ====================
+  postgres:
+    image: postgres:15-alpine
+    container_name: alumni_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: alumni_connect
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - alumni_network
+
+  # ==================== FRONTEND ====================
+  frontend:
+    build:
+      context: ./alumni-connect-frontend
+      dockerfile: Dockerfile
+    container_name: alumni_frontend
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./alumni-connect-frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:4000
+    depends_on:
+      - api-gateway
+    networks:
+      - alumni_network
+
+  # ==================== API GATEWAY ====================
+  api-gateway:
+    build:
+      context: ./alumni-connect-backend/services/api-gateway
+      dockerfile: Dockerfile
+    container_name: alumni_gateway
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    environment:
+      - PORT=4000
+      - NODE_SERVICE_URL=http://identity-service:4001/graphql
+      - PYTHON_SERVICE_URL=http://event-service:4002/graphql
+      - PHP_SERVICE_URL=http://funding-service:4003/graphql
+    depends_on:
+      - identity-service
+      - event-service
+      - funding-service
+    networks:
+      - alumni_network
+
+  # ==================== IDENTITY SERVICE (Node.js + Prisma) ====================
+  identity-service:
+    build:
+      context: ./alumni-connect-backend/services/identity-service
+      dockerfile: Dockerfile
+    container_name: alumni_identity
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=postgresql://postgres:root@postgres:5432/alumni_connect?schema=identity_schema
+      - PORT=4001
+      - NODE_ENV=development
+      - JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+      - JWT_EXPIRES_IN=7d
+      - SERVICE_NAME=identity-service
+    volumes:
+      - ./alumni-connect-backend/services/identity-service:/app
+      - /app/node_modules
+      - identity_uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - alumni_network
+
+  # ==================== EVENT SERVICE (Python + FastAPI) ====================
+  event-service:
+    build:
+      context: ./alumni-connect-backend/services/event-service
+      dockerfile: Dockerfile
+    container_name: alumni_event
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=postgresql://postgres:root@postgres:5432/alumni_connect
+      - SERVICE_PORT=4002
+      - JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+      - NODE_SERVICE_URL=http://identity-service:4001/graphql
+      - SERVICE_NAME=event-service
+    volumes:
+      - ./alumni-connect-backend/services/event-service:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - alumni_network
+
+  # ==================== FUNDING SERVICE (PHP + Laravel) ====================
+  funding-service:
+    build:
+      context: ./alumni-connect-backend/services/funding-service
+      dockerfile: Dockerfile
+    container_name: alumni_funding
+    restart: unless-stopped
+    environment:
+      - APP_NAME=FundingService
+      - APP_ENV=local
+      - APP_KEY=base64:randomgeneratedkeyhere1234567890ab
+      - APP_DEBUG=true
+      - APP_URL=http://localhost:4003
+      - LOG_CHANNEL=stack
+      - LOG_LEVEL=debug
+      - DB_CONNECTION=pgsql
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=alumni_connect
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=root
+      - JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+      - CACHE_DRIVER=file
+      - QUEUE_CONNECTION=sync
+      - SESSION_DRIVER=file
+      - LIGHTHOUSE_CACHE_ENABLE=false
+    volumes:
+      - ./alumni-connect-backend/services/funding-service:/app
+      - /app/vendor
+      - funding_storage:/app/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - alumni_network
+
+# ==================== NETWORKS ====================
+networks:
+  alumni_network:
+    driver: bridge
+
+# ==================== VOLUMES ====================
+volumes:
+  postgres_data:
+    driver: local
+  identity_uploads:
+    driver: local
+  funding_storage:
+    driver: local
