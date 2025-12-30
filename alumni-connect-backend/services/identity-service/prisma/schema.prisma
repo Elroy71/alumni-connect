@@ -239,6 +239,14 @@ model RefreshToken {
 
 // ==================== FORUM MODELS ====================
 
+enum MediaType {
+  IMAGE
+  PDF
+  DOCUMENT
+
+  @@schema("identity_schema")
+}
+
 model Post {
   id          String      @id @default(uuid())
   userId      String
@@ -246,6 +254,8 @@ model Post {
   content     String      @db.Text
   excerpt     String?     @db.VarChar(200)
   coverImage  String?
+  mediaType   MediaType?
+  mediaUrl    String?     @db.Text
   categoryId  String?
   status      PostStatus  @default(PUBLISHED)
   views       Int         @default(0)

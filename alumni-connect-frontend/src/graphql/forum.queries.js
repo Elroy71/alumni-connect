@@ -10,6 +10,8 @@ export const GET_POSTS = gql`
         content
         excerpt
         coverImage
+        mediaType
+        mediaUrl
         categoryId
         status
         views
@@ -61,6 +63,8 @@ export const GET_POST = gql`
       content
       excerpt
       coverImage
+      mediaType
+      mediaUrl
       categoryId
       status
       views
@@ -166,6 +170,45 @@ export const GET_CATEGORIES = gql`
       icon
       color
       postsCount
+    }
+  }
+`;
+
+export const GET_USER_POSTS = gql`
+  query GetUserPosts($userId: ID!, $limit: Int) {
+    userPosts(userId: $userId, limit: $limit) {
+      id
+      userId
+      title
+      content
+      excerpt
+      coverImage
+      mediaType
+      mediaUrl
+      categoryId
+      status
+      views
+      createdAt
+      updatedAt
+      user {
+        id
+        email
+        profile {
+          fullName
+          avatar
+          currentPosition
+          currentCompany
+        }
+      }
+      category {
+        id
+        name
+        slug
+        color
+      }
+      commentsCount
+      likesCount
+      isLiked
     }
   }
 `;

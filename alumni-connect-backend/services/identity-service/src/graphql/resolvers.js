@@ -123,6 +123,10 @@ const resolvers = {
       return await ForumService.getCategories();
     },
 
+    userPosts: async (_, { userId, limit }) => {
+      return await ForumService.getUserPosts(userId, limit || 2);
+    },
+
     // ==================== JOB QUERIES ====================
     jobs: async (_, { filter }, context) => {
       const userId = context.user?.userId || null;

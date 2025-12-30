@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { MessageCircle, Heart, Eye, Calendar } from 'lucide-react';
+import { MessageCircle, Heart, Eye, Calendar, FileText, Image as ImageIcon, Download } from 'lucide-react';
 import Card from '../ui/Card';
 import Badge from '../ui/Badge';
 
@@ -16,22 +16,30 @@ const PostCard = ({ post, onLike }) => {
     if (diffMins < 60) return `${diffMins} menit yang lalu`;
     if (diffHours < 24) return `${diffHours} jam yang lalu`;
     if (diffDays < 7) return `${diffDays} hari yang lalu`;
-    
-    return date.toLocaleDateString('id-ID', { 
-      day: 'numeric', 
-      month: 'short', 
-      year: 'numeric' 
+
+    return date.toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
     });
   };
 
   return (
-    <Card hover padding="lg" className="animate-fade-in">
+    <Card padding="lg" className="animate-fade-in">
       <div className="flex gap-4">
         {/* Avatar */}
         <Link to={`/dashboard/forum/post/${post.id}`}>
-          <div className="w-12 h-12 rounded-full bg-gradient-primary flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
-            {post.user?.profile?.fullName?.charAt(0) || 'U'}
-          </div>
+          {post.user?.profile?.avatar ? (
+            <img
+              src={post.user.profile.avatar}
+              alt={post.user.profile.fullName}
+              className="w-12 h-12 rounded-full object-cover flex-shrink-0"
+            />
+          ) : (
+            <div className="w-12 h-12 rounded-full bg-gradient-primary flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+              {post.user?.profile?.fullName?.charAt(0) || 'U'}
+            </div>
+          )}
         </Link>
 
         {/* Content */}
@@ -60,11 +68,11 @@ const PostCard = ({ post, onLike }) => {
 
             {/* Category Badge */}
             {post.category && (
-              <Badge 
-                variant="primary" 
-                style={{ 
+              <Badge
+                variant="primary"
+                style={{
                   backgroundColor: `${post.category.color}20`,
-                  color: post.category.color 
+                  color: post.category.color
                 }}
               >
                 {post.category.name}
@@ -83,11 +91,71 @@ const PostCard = ({ post, onLike }) => {
             {post.excerpt || post.content.substring(0, 200)}
           </p>
 
+          {/* Media Display */}
+          {post.mediaType && post.mediaUrl && (
+            <div className="mb-4">
+              {post.mediaType === 'IMAGE' && (
+                <Link to={`/dashboard/forum/post/${post.id}`}>
+                  <div className="relative rounded-xl overflow-hidden bg-dark-100 cursor-pointer" style={{ maxHeight: '200px' }}>
+                    <img
+                      src={post.mediaUrl}
+                      alt="Post media"
+                      className="w-full h-auto object-contain mx-auto"
+                      style={{ maxHeight: '200px' }}
+                    />
+                  </div>
+                </Link>
+              )}
+              {post.mediaType === 'PDF' && (
+                <a
+                  href={post.mediaUrl}
+                  download
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 p-4 bg-red-50 rounded-xl cursor-pointer"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="w-12 h-12 bg-red-500 rounded-lg flex items-center justify-center shadow-md">
+                    <FileText className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-dark-900">Dokumen PDF</p>
+                    <p className="text-sm text-dark-500">Klik untuk mengunduh</p>
+                  </div>
+                  <div className="p-2 bg-white rounded-full shadow-sm">
+                    <Download className="w-5 h-5 text-red-600" />
+                  </div>
+                </a>
+              )}
+              {post.mediaType === 'DOCUMENT' && (
+                <a
+                  href={post.mediaUrl}
+                  download
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 p-4 bg-blue-50 rounded-xl cursor-pointer"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center shadow-md">
+                    <FileText className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-dark-900">Dokumen</p>
+                    <p className="text-sm text-dark-500">Klik untuk mengunduh</p>
+                  </div>
+                  <div className="p-2 bg-white rounded-full shadow-sm">
+                    <Download className="w-5 h-5 text-blue-600" />
+                  </div>
+                </a>
+              )}
+            </div>
+          )}
+
           {/* Tags */}
           {post.tags && post.tags.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-4">
               {post.tags.map((postTag) => (
-                <span 
+                <span
                   key={postTag.tag.id}
                   className="px-2 py-1 bg-dark-100 text-dark-600 text-xs rounded-full"
                 >
@@ -101,17 +169,16 @@ const PostCard = ({ post, onLike }) => {
           <div className="flex items-center gap-6 text-dark-600">
             <button
               onClick={() => onLike(post.id)}
-              className={`flex items-center gap-2 hover:text-red-500 transition-colors ${
-                post.isLiked ? 'text-red-500' : ''
-              }`}
+              className={`flex items-center gap-2 hover:text-red-500 transition-colors ${post.isLiked ? 'text-red-500' : ''
+                }`}
             >
-              <Heart 
-                className={`w-5 h-5 ${post.isLiked ? 'fill-current' : ''}`} 
+              <Heart
+                className={`w-5 h-5 ${post.isLiked ? 'fill-current' : ''}`}
               />
               <span className="font-semibold">{post.likesCount || 0}</span>
             </button>
 
-            <Link 
+            <Link
               to={`/dashboard/forum/post/${post.id}`}
               className="flex items-center gap-2 hover:text-primary-600 transition-colors"
             >

@@ -271,6 +271,12 @@ const baseTypeDefs = gql`
     DELETED
   }
 
+  enum MediaType {
+    IMAGE
+    PDF
+    DOCUMENT
+  }
+
   type Post {
     id: ID!
     userId: String!
@@ -278,6 +284,8 @@ const baseTypeDefs = gql`
     content: String!
     excerpt: String
     coverImage: String
+    mediaType: MediaType
+    mediaUrl: String
     categoryId: String
     status: PostStatus!
     views: Int!
@@ -349,6 +357,8 @@ const baseTypeDefs = gql`
     content: String!
     excerpt: String
     coverImage: String
+    mediaType: MediaType
+    mediaUrl: String
     categoryId: String
     tags: [String!]
   }
@@ -388,6 +398,7 @@ const baseTypeDefs = gql`
     posts(filter: PostFilterInput): PostsResponse!
     post(id: ID!): Post!
     myPosts: [Post!]!
+    userPosts(userId: ID!, limit: Int): [Post!]!
     comments(postId: ID!, limit: Int, offset: Int): [Comment!]!
     categories: [Category!]!
   }

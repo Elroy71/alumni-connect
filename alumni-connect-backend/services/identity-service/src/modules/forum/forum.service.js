@@ -3,9 +3,9 @@ import prisma from '../../config/database.js';
 
 class ForumService {
   // ==================== POSTS ====================
-  
+
   async createPost(userId, data) {
-    const { title, content, excerpt, coverImage, categoryId, tags } = data;
+    const { title, content, excerpt, coverImage, mediaType, mediaUrl, categoryId, tags } = data;
 
     // Create post
     const post = await prisma.post.create({
@@ -15,6 +15,8 @@ class ForumService {
         content,
         excerpt: excerpt || content.substring(0, 200),
         coverImage,
+        mediaType,
+        mediaUrl,
         categoryId,
         status: 'PUBLISHED',
         tags: tags && tags.length > 0 ? {
@@ -53,12 +55,12 @@ class ForumService {
   }
 
   async getPosts(filter = {}) {
-    const { 
-      categoryId, 
-      userId, 
-      search, 
+    const {
+      categoryId,
+      userId,
+      search,
       status = 'PUBLISHED',
-      limit = 20, 
+      limit = 20,
       offset = 0,
       orderBy = 'createdAt',
       order = 'desc'
@@ -352,7 +354,7 @@ class ForumService {
       ...(type === 'post' ? { postId: targetId } : { commentId: targetId })
     };
 
-    const whereClause = type === 'post' 
+    const whereClause = type === 'post'
       ? { userId_postId: { userId, postId: targetId } }
       : { userId_commentId: { userId, commentId: targetId } };
 
@@ -393,6 +395,40 @@ class ForumService {
     });
 
     return categories;
+  }
+
+  async getUserPosts(userId, limit = 2) {
+    const posts = await prisma.post.findMany({
+      where: {
+        userId,
+        status: 'PUBLISHED'
+      },
+      include: {
+        user: {
+          include: {
+            profile: {
+              select: {
+                fullName: true,
+                avatar: true,
+                currentPosition: true,
+                currentCompany: true
+              }
+            }
+          }
+        },
+        category: true,
+        _count: {
+          select: {
+            comments: true,
+            likes: true
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' },
+      take: limit
+    });
+
+    return posts;
   }
 
   async createCategory(data) {

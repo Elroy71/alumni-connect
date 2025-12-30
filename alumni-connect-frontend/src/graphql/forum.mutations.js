@@ -7,6 +7,8 @@ export const CREATE_POST = gql`
       title
       content
       excerpt
+      mediaType
+      mediaUrl
       categoryId
       status
       createdAt

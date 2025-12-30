@@ -40,6 +40,7 @@ import ExperienceModal from '../../components/Profile/ExperienceModal';
 import EducationModal from '../../components/Profile/EducationModal';
 import SkillModal from '../../components/Profile/SkillModal';
 import AchievementModal from '../../components/Profile/AchievementModal';
+import ActivitySection from '../../components/Profile/ActivitySection';
 
 const ProfilePage = () => {
   const { data, loading, refetch } = useQuery(MY_PROFILE_QUERY);
@@ -606,6 +607,9 @@ const ProfilePage = () => {
               </p>
             </Card>
           )}
+
+          {/* Activity Section - LinkedIn Style */}
+          <ActivitySection userId={profile?.userId} />
 
           {/* Experience Section */}
           <Card padding="lg">

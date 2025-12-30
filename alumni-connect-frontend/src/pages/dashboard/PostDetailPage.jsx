@@ -10,8 +10,10 @@ import {
   Trash2,
   Calendar,
   Briefcase,
-  Award,
-  X
+  X,
+  FileText,
+  Download,
+  ZoomIn
 } from 'lucide-react';
 import { GET_POST, GET_COMMENTS } from '../../graphql/forum.queries';
 import { CREATE_COMMENT, TOGGLE_LIKE, DELETE_POST } from '../../graphql/forum.mutations';
@@ -26,6 +28,7 @@ const PostDetailPage = () => {
   const { user } = useAuthStore();
   const [commentText, setCommentText] = useState('');
   const [replyTo, setReplyTo] = useState(null);
+  const [showImageModal, setShowImageModal] = useState(false);
 
   const { data: postData, loading: postLoading, refetch: refetchPost } = useQuery(GET_POST, {
     variables: { id }
@@ -171,9 +174,17 @@ const PostDetailPage = () => {
         {/* Author Info */}
         <div className="flex items-start justify-between mb-6 pb-6 border-b border-dark-200">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-gradient-primary flex items-center justify-center text-white font-bold text-lg">
-              {post.user?.profile?.fullName?.charAt(0) || 'U'}
-            </div>
+            {post.user?.profile?.avatar ? (
+              <img
+                src={post.user.profile.avatar}
+                alt={post.user.profile.fullName}
+                className="w-12 h-12 rounded-full object-cover"
+              />
+            ) : (
+              <div className="w-12 h-12 rounded-full bg-gradient-primary flex items-center justify-center text-white font-bold text-lg">
+                {post.user?.profile?.fullName?.charAt(0) || 'U'}
+              </div>
+            )}
             <div>
               <p className="font-bold text-dark-900">
                 {post.user?.profile?.fullName || 'User'}
@@ -211,6 +222,76 @@ const PostDetailPage = () => {
             {post.content}
           </p>
         </div>
+
+        {/* Media Display Section */}
+        {post.mediaType && post.mediaUrl && (
+          <div className="mb-6">
+            {post.mediaType === 'IMAGE' && (
+              <div className="relative">
+                <div
+                  className="relative rounded-xl overflow-hidden bg-dark-100 cursor-pointer"
+                  onClick={() => setShowImageModal(true)}
+                >
+                  <img
+                    src={post.mediaUrl}
+                    alt="Post media"
+                    className="w-full max-h-96 object-contain mx-auto"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.parentElement.innerHTML = '<p class="text-center py-8 text-dark-500">Gagal memuat gambar</p>';
+                    }}
+                  />
+                  <div className="absolute bottom-3 right-3 bg-black bg-opacity-50 rounded-full p-2">
+                    <ZoomIn className="w-5 h-5 text-white" />
+                  </div>
+                </div>
+                <p className="text-sm text-dark-500 mt-2 text-center">Klik gambar untuk memperbesar</p>
+              </div>
+            )}
+
+            {post.mediaType === 'PDF' && (
+              <a
+                href={post.mediaUrl}
+                download
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-4 p-4 bg-gradient-to-r from-red-50 to-red-100 rounded-xl hover:from-red-100 hover:to-red-200 transition-colors"
+              >
+                <div className="w-14 h-14 bg-red-500 rounded-lg flex items-center justify-center shadow-md">
+                  <FileText className="w-7 h-7 text-white" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-dark-900">Dokumen PDF</p>
+                  <p className="text-sm text-dark-500">Klik untuk mengunduh atau melihat</p>
+                </div>
+                <div className="p-3 bg-white rounded-full shadow-sm">
+                  <Download className="w-6 h-6 text-red-600" />
+                </div>
+              </a>
+            )}
+
+            {post.mediaType === 'DOCUMENT' && (
+              <a
+                href={post.mediaUrl}
+                download
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl hover:from-blue-100 hover:to-blue-200 transition-colors"
+              >
+                <div className="w-14 h-14 bg-blue-500 rounded-lg flex items-center justify-center shadow-md">
+                  <FileText className="w-7 h-7 text-white" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-dark-900">Dokumen</p>
+                  <p className="text-sm text-dark-500">Klik untuk mengunduh atau melihat</p>
+                </div>
+                <div className="p-3 bg-white rounded-full shadow-sm">
+                  <Download className="w-6 h-6 text-blue-600" />
+                </div>
+              </a>
+            )}
+          </div>
+        )}
 
         {/* Tags */}
         {post.tags && post.tags.length > 0 && (
@@ -376,6 +457,27 @@ const PostDetailPage = () => {
           </div>
         )}
       </Card>
+
+      {/* Image Modal/Lightbox */}
+      {showImageModal && post.mediaType === 'IMAGE' && post.mediaUrl && (
+        <div
+          className="fixed inset-0 z-50 bg-black bg-opacity-90 flex items-center justify-center p-4"
+          onClick={() => setShowImageModal(false)}
+        >
+          <button
+            onClick={() => setShowImageModal(false)}
+            className="absolute top-4 right-4 p-2 bg-white bg-opacity-20 rounded-full hover:bg-opacity-30 transition-colors"
+          >
+            <X className="w-8 h-8 text-white" />
+          </button>
+          <img
+            src={post.mediaUrl}
+            alt="Full size"
+            className="max-w-full max-h-full object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   );
 };
