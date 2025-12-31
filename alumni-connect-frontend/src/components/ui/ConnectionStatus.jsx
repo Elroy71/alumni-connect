@@ -13,9 +13,11 @@ const ConnectionStatus = () => {
 
   const checkConnection = async () => {
     try {
-      const response = await fetch('http://localhost:4000/health');
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000/graphql';
+      const healthUrl = apiUrl.replace('/graphql', '/health');
+      const response = await fetch(healthUrl);
       const data = await response.json();
-      
+
       setStatus('connected');
       setServices(data.subgraphs || {});
     } catch (error) {
