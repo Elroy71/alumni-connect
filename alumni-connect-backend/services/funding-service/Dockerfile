@@ -29,8 +29,13 @@ COPY . .
 # Run composer scripts after copying all files
 RUN composer dump-autoload --optimize
 
-# Expose Funding Service port
-EXPOSE 4003
+# Create storage directories and set permissions
+RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs \
+    && chmod -R 775 storage bootstrap/cache
 
-# Start Laravel development server
-CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=4003"]
+# Railway uses PORT environment variable
+ENV PORT=8080
+EXPOSE 8080
+
+# Start Laravel development server on dynamic PORT
+CMD php artisan serve --host=0.0.0.0 --port=${PORT:-8080}
