@@ -31,9 +31,7 @@ class AdminService {
                     _count: {
                         select: {
                             posts: true,
-                            postedJobs: true,
-                            organizedEvents: true,
-                            campaigns: true
+                            postedJobs: true
                         }
                     }
                 },
