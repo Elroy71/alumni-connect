@@ -13,6 +13,21 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+// Root endpoint - API info
 Route::get('/', function () {
-    return view('welcome');
+    return response()->json([
+        'message' => 'Alumni Connect - Funding Service',
+        'version' => '1.0.0',
+        'graphql' => '/graphql',
+        'health' => '/health'
+    ]);
+});
+
+// Health check endpoint
+Route::get('/health', function () {
+    return response()->json([
+        'status' => 'healthy',
+        'service' => 'funding-service',
+        'version' => '1.0.0'
+    ]);
 });
