@@ -31,14 +31,12 @@ const ConnectionStatus = () => {
   return (
     <div className="fixed bottom-4 right-4 z-50">
       {status === 'connected' ? (
-        <div className="bg-green-50 border-2 border-green-200 rounded-xl p-3 shadow-lg flex items-center gap-2">
-          <Wifi className="w-5 h-5 text-green-600" />
-          <div>
-            <p className="text-sm font-semibold text-green-900">Connected to Gateway</p>
-            <div className="flex gap-2 text-xs text-green-700">
-              <span>Identity: {services['identity-service'] === 'healthy' ? '✅' : '❌'}</span>
-              <span>Events: {services['event-service'] === 'healthy' ? '✅' : '❌'}</span>
-            </div>
+        <div className="bg-green-50 border border-green-200 rounded-lg px-2 py-1.5 shadow-md flex items-center gap-1.5">
+          <Wifi className="w-3.5 h-3.5 text-green-600" />
+          <div className="flex items-center gap-1.5 text-[10px] text-green-700">
+            <span>ID:{services['identity-service'] === 'healthy' ? '✓' : '✗'}</span>
+            <span>EV:{services['event-service'] === 'healthy' ? '✓' : '✗'}</span>
+            <span>FD:{services['funding-service'] === 'healthy' ? '✓' : '✗'}</span>
           </div>
         </div>
       ) : (
