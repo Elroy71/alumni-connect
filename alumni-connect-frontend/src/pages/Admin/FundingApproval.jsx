@@ -29,8 +29,12 @@ const FundingApproval = () => {
   const [historyFilter, setHistoryFilter] = useState('all');
   const [showHistory, setShowHistory] = useState(true);
 
-  const { data: pendingData, loading: loadingPending, refetch: refetchPending } = useQuery(GET_PENDING_CAMPAIGNS);
-  const { data: historyData, loading: loadingHistory, refetch: refetchHistory } = useQuery(GET_CAMPAIGN_HISTORY);
+  const { data: pendingData, loading: loadingPending, refetch: refetchPending } = useQuery(GET_PENDING_CAMPAIGNS, {
+    fetchPolicy: 'network-only'
+  });
+  const { data: historyData, loading: loadingHistory, refetch: refetchHistory } = useQuery(GET_CAMPAIGN_HISTORY, {
+    fetchPolicy: 'network-only'
+  });
 
   const [approveCampaign, { loading: approving }] = useMutation(APPROVE_CAMPAIGN, {
     onCompleted: () => {
@@ -115,14 +119,15 @@ const FundingApproval = () => {
   const historyCampaigns = historyData?.campaignHistory || [];
 
   const filteredHistory = historyCampaigns.filter(campaign => {
+    const status = campaign.status?.toLowerCase();
     if (historyFilter === 'all') return true;
-    if (historyFilter === 'approved') return campaign.status === 'active' || campaign.status === 'completed';
-    if (historyFilter === 'rejected') return campaign.status === 'rejected';
+    if (historyFilter === 'approved') return status === 'active' || status === 'completed';
+    if (historyFilter === 'rejected') return status === 'rejected';
     return true;
   });
 
-  const approvedCount = historyCampaigns.filter(c => c.status === 'active' || c.status === 'completed').length;
-  const rejectedCount = historyCampaigns.filter(c => c.status === 'rejected').length;
+  const approvedCount = historyCampaigns.filter(c => c.status?.toLowerCase() === 'active' || c.status?.toLowerCase() === 'completed').length;
+  const rejectedCount = historyCampaigns.filter(c => c.status?.toLowerCase() === 'rejected').length;
 
   if (loadingPending) return <div className="loading">Memuat...</div>;
 

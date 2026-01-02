@@ -45,7 +45,10 @@ class AdminQueries
      */
     public function campaignHistory($root, array $args, $context)
     {
-        return Campaign::whereIn('status', ['active', 'completed', 'rejected'])
+        return Campaign::where(function($query) {
+                $query->whereIn('status', ['active', 'completed'])
+                      ->orWhere('status', 'rejected');
+            })
             ->with(['donations', 'updates'])
             ->orderBy('updated_at', 'desc')
             ->get();
