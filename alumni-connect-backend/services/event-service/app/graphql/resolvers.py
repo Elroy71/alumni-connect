@@ -1,4 +1,5 @@
 import strawberry
+from strawberry.types import Info
 from typing import Optional, List
 from datetime import datetime
 from sqlalchemy.orm import Session
@@ -24,7 +25,7 @@ class Query:
     def events(
         self,
         filter: Optional[EventFilterInput] = None,
-        info: strawberry.Info = None
+        info: Info = None
     ) -> EventsResponse:
         db: Session = next(get_db())
         user = get_current_user(info)
@@ -142,7 +143,7 @@ class Query:
             db.close()
 
     @strawberry.field
-    def event(self, id: strawberry.ID, info: strawberry.Info = None) -> Optional[Event]:
+    def event(self, id: strawberry.ID, info: Info = None) -> Optional[Event]:
         db: Session = next(get_db())
         user = get_current_user(info)
         
@@ -213,7 +214,7 @@ class Query:
         self,
         status: Optional[RegistrationStatus] = None,
         upcoming: bool = False,
-        info: strawberry.Info = None
+        info: Info = None
     ) -> List[Registration]:
         db: Session = next(get_db())
         user = get_current_user(info)
@@ -294,7 +295,7 @@ class Mutation:
     def createEvent(
         self,
         input: CreateEventInput,
-        info: strawberry.Info = None
+        info: Info = None
     ) -> Event:
         db: Session = next(get_db())
         user = get_current_user(info)
@@ -381,7 +382,7 @@ class Mutation:
         self,
         eventId: strawberry.ID,
         input: Optional[RegisterEventInput] = None,
-        info: strawberry.Info = None
+        info: Info = None
     ) -> Registration:
         db: Session = next(get_db())
         user = get_current_user(info)
@@ -450,7 +451,7 @@ class Mutation:
     def cancelRegistration(
         self,
         eventId: strawberry.ID,
-        info: strawberry.Info = None
+        info: Info = None
     ) -> MessageResponse:
         db: Session = next(get_db())
         user = get_current_user(info)
@@ -494,7 +495,7 @@ class Mutation:
     def approveEvent(
         self,
         eventId: strawberry.ID,
-        info: strawberry.Info = None
+        info: Info = None
     ) -> Event:
         db: Session = next(get_db())
         user = get_current_user(info)
@@ -551,7 +552,7 @@ class Mutation:
         self,
         eventId: strawberry.ID,
         reason: str,
-        info: strawberry.Info = None
+        info: Info = None
     ) -> Event:
         db: Session = next(get_db())
         user = get_current_user(info)
