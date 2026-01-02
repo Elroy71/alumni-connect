@@ -5,5 +5,8 @@ nixPkgs = ["python311", "postgresql"]
 [phases.install]
 cmds = ["pip install -r requirements.txt"]
 
+[variables]
+NIXPACKS_PYTHON_VERSION = "3.11"
+
 [start]
 cmd = "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080}"
