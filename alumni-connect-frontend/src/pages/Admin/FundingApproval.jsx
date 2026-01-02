@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client';
 import { GET_PENDING_CAMPAIGNS, GET_CAMPAIGN_HISTORY } from '../../graphql/funding.queries';
 import { APPROVE_CAMPAIGN, REJECT_CAMPAIGN } from '../../graphql/funding.mutations';
-import { DollarSign, User, Calendar, Target, Check, X, Eye, History, ChevronDown, ChevronUp } from 'lucide-react';
+import { DollarSign, Check, X, Eye } from 'lucide-react';
 
 const CATEGORY_LABELS = {
   'scholarship': 'Beasiswa',
@@ -16,9 +16,14 @@ const CATEGORY_LABELS = {
 };
 
 const STATUS_LABELS = {
+  'pending_approval': 'Menunggu',
   'active': 'Disetujui',
   'completed': 'Selesai',
-  'rejected': 'Ditolak'
+  'rejected': 'Ditolak',
+  'PENDING_APPROVAL': 'Menunggu',
+  'ACTIVE': 'Disetujui',
+  'COMPLETED': 'Selesai',
+  'REJECTED': 'Ditolak'
 };
 
 const FundingApproval = () => {
@@ -26,8 +31,7 @@ const FundingApproval = () => {
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
-  const [historyFilter, setHistoryFilter] = useState('all');
-  const [showHistory, setShowHistory] = useState(true);
+  const [activeFilter, setActiveFilter] = useState('all');
 
   const { data: pendingData, loading: loadingPending, refetch: refetchPending } = useQuery(GET_PENDING_CAMPAIGNS, {
     fetchPolicy: 'network-only'
@@ -72,8 +76,8 @@ const FundingApproval = () => {
     setShowRejectModal(true);
   };
 
-  const handleViewDetail = (campaign, isHistory = false) => {
-    setSelectedCampaign({ ...campaign, isHistory });
+  const handleViewDetail = (campaign) => {
+    setSelectedCampaign(campaign);
     setShowDetailModal(true);
   };
 
@@ -95,15 +99,6 @@ const FundingApproval = () => {
     return `Rp ${new Intl.NumberFormat('id-ID').format(amount)}`;
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return '-';
-    return new Date(dateString).toLocaleDateString('id-ID', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    });
-  };
-
   const formatDateTime = (dateString) => {
     if (!dateString) return '-';
     return new Date(dateString).toLocaleDateString('id-ID', {
@@ -115,204 +110,152 @@ const FundingApproval = () => {
     });
   };
 
+  const getStatusBadgeClass = (status) => {
+    const s = status?.toLowerCase();
+    if (s === 'active' || s === 'completed') return 'status-badge approved';
+    if (s === 'rejected') return 'status-badge rejected';
+    if (s === 'pending_approval') return 'status-badge pending';
+    return 'status-badge';
+  };
+
+  // Combine pending and history campaigns
   const pendingCampaigns = pendingData?.pendingCampaigns || [];
   const historyCampaigns = historyData?.campaignHistory || [];
 
-  const filteredHistory = historyCampaigns.filter(campaign => {
+  // All campaigns combined
+  const allCampaigns = [...pendingCampaigns, ...historyCampaigns];
+
+  // Filter campaigns based on active filter
+  const filteredCampaigns = allCampaigns.filter(campaign => {
     const status = campaign.status?.toLowerCase();
-    if (historyFilter === 'all') return true;
-    if (historyFilter === 'approved') return status === 'active' || status === 'completed';
-    if (historyFilter === 'rejected') return status === 'rejected';
+    if (activeFilter === 'all') return true;
+    if (activeFilter === 'approved') return status === 'active' || status === 'completed';
+    if (activeFilter === 'rejected') return status === 'rejected';
     return true;
   });
 
-  const approvedCount = historyCampaigns.filter(c => c.status?.toLowerCase() === 'active' || c.status?.toLowerCase() === 'completed').length;
-  const rejectedCount = historyCampaigns.filter(c => c.status?.toLowerCase() === 'rejected').length;
+  // Count for tabs
+  const approvedCount = allCampaigns.filter(c => c.status?.toLowerCase() === 'active' || c.status?.toLowerCase() === 'completed').length;
+  const rejectedCount = allCampaigns.filter(c => c.status?.toLowerCase() === 'rejected').length;
 
-  if (loadingPending) return <div className="loading">Memuat...</div>;
+  if (loadingPending || loadingHistory) return <div className="loading">Memuat...</div>;
 
   return (
     <div className="funding-approval">
-      {/* Pending Campaigns Section */}
       <div className="page-header">
-        <h1>Persetujuan Funding</h1>
-        <p className="page-subtitle">{pendingCampaigns.length} campaign menunggu persetujuan</p>
+        <h1>Funding Approval</h1>
       </div>
 
-      <div className="campaigns-grid">
-        {pendingCampaigns.length === 0 ? (
+      {/* Filter Tabs - Same as Event Approval */}
+      <div className="filter-tabs">
+        <button
+          className={`tab ${activeFilter === 'all' ? 'active' : ''}`}
+          onClick={() => setActiveFilter('all')}
+        >
+          Semua ({allCampaigns.length})
+        </button>
+        <button
+          className={`tab approved ${activeFilter === 'approved' ? 'active' : ''}`}
+          onClick={() => setActiveFilter('approved')}
+        >
+          <Check size={16} />
+          Disetujui ({approvedCount})
+        </button>
+        <button
+          className={`tab rejected ${activeFilter === 'rejected' ? 'active' : ''}`}
+          onClick={() => setActiveFilter('rejected')}
+        >
+          <X size={16} />
+          Ditolak ({rejectedCount})
+        </button>
+      </div>
+
+      {/* Campaigns Table - Same as Event Approval */}
+      <div className="campaigns-table-container">
+        {filteredCampaigns.length === 0 ? (
           <div className="empty-state">
             <DollarSign size={64} strokeWidth={1} />
-            <h3>Tidak ada campaign pending</h3>
-            <p>Semua campaign telah direview</p>
+            <h3>Tidak ada campaign</h3>
+            <p>Belum ada campaign dalam kategori ini</p>
           </div>
         ) : (
-          pendingCampaigns.map((campaign) => (
-            <div key={campaign.id} className="campaign-card">
-              {campaign.imageUrl && (
-                <div className="campaign-image">
-                  <img src={campaign.imageUrl} alt={campaign.title} />
-                  <div className="campaign-badge">MENUNGGU</div>
-                </div>
-              )}
+          <table className="campaigns-table">
+            <thead>
+              <tr>
+                <th>CAMPAIGN</th>
+                <th>KATEGORI</th>
+                <th>TARGET</th>
+                <th>STATUS</th>
+                <th>TANGGAL</th>
+                <th>AKSI</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredCampaigns.map((campaign) => {
+                const status = campaign.status?.toLowerCase();
+                const isPending = status === 'pending_approval';
 
-              <div className="campaign-content">
-                <div className="campaign-category">
-                  {CATEGORY_LABELS[campaign.category] || campaign.category}
-                </div>
-                <h3 className="campaign-title">{campaign.title}</h3>
-
-                <div className="campaign-meta">
-                  <div className="meta-item">
-                    <User size={16} />
-                    <span>User ID: {campaign.userId?.slice(-8) || '-'}</span>
-                  </div>
-                  <div className="meta-item">
-                    <Target size={16} />
-                    <span>Target: {formatAmount(campaign.targetAmount)}</span>
-                  </div>
-                  <div className="meta-item">
-                    <Calendar size={16} />
-                    <span>Deadline: {formatDate(campaign.endDate)}</span>
-                  </div>
-                </div>
-
-                <p className="campaign-description">{campaign.description}</p>
-
-                <div className="campaign-actions">
-                  <button
-                    className="btn-view"
-                    onClick={() => handleViewDetail(campaign, false)}
-                  >
-                    <Eye size={18} />
-                    Detail
-                  </button>
-                  <button
-                    className="btn-approve"
-                    onClick={() => handleApprove(campaign.id)}
-                    disabled={approving}
-                  >
-                    <Check size={18} />
-                    Setujui
-                  </button>
-                  <button
-                    className="btn-reject"
-                    onClick={() => handleReject(campaign)}
-                    disabled={rejecting}
-                  >
-                    <X size={18} />
-                    Tolak
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-
-      {/* History Section */}
-      <div className="history-section">
-        <div className="history-header" onClick={() => setShowHistory(!showHistory)}>
-          <div className="history-title">
-            <History size={24} />
-            <h2>Riwayat Persetujuan</h2>
-            <span className="history-count">({historyCampaigns.length})</span>
-          </div>
-          <button className="toggle-btn">
-            {showHistory ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
-          </button>
-        </div>
-
-        {showHistory && (
-          <>
-            <div className="filter-tabs">
-              <button
-                className={`tab ${historyFilter === 'all' ? 'active' : ''}`}
-                onClick={() => setHistoryFilter('all')}
-              >
-                Semua ({historyCampaigns.length})
-              </button>
-              <button
-                className={`tab approved ${historyFilter === 'approved' ? 'active' : ''}`}
-                onClick={() => setHistoryFilter('approved')}
-              >
-                <Check size={16} />
-                Disetujui ({approvedCount})
-              </button>
-              <button
-                className={`tab rejected ${historyFilter === 'rejected' ? 'active' : ''}`}
-                onClick={() => setHistoryFilter('rejected')}
-              >
-                <X size={16} />
-                Ditolak ({rejectedCount})
-              </button>
-            </div>
-
-            {loadingHistory ? (
-              <div className="loading">Memuat riwayat...</div>
-            ) : filteredHistory.length === 0 ? (
-              <div className="empty-history">
-                <p>Tidak ada riwayat</p>
-              </div>
-            ) : (
-              <div className="history-table">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Campaign</th>
-                      <th>Kategori</th>
-                      <th>Target</th>
-                      <th>Status</th>
-                      <th>Tanggal</th>
-                      <th>Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredHistory.map((campaign) => (
-                      <tr key={campaign.id}>
-                        <td>
-                          <div className="campaign-info">
-                            {campaign.imageUrl && (
-                              <img src={campaign.imageUrl} alt="" className="campaign-thumb" />
-                            )}
-                            <div>
-                              <span className="campaign-name">{campaign.title}</span>
-                              <span className="campaign-user">User: {campaign.userId?.slice(-8)}</span>
-                            </div>
-                          </div>
-                        </td>
-                        <td>
-                          <span className="category-badge">
-                            {CATEGORY_LABELS[campaign.category] || campaign.category}
-                          </span>
-                        </td>
-                        <td>{formatAmount(campaign.targetAmount)}</td>
-                        <td>
-                          <span className={`status-badge ${campaign.status}`}>
-                            {STATUS_LABELS[campaign.status] || campaign.status}
-                          </span>
-                        </td>
-                        <td>
-                          {campaign.status === 'rejected'
-                            ? formatDateTime(campaign.rejectedAt)
-                            : formatDateTime(campaign.approvedAt)
-                          }
-                        </td>
-                        <td>
-                          <button
-                            className="btn-view-small"
-                            onClick={() => handleViewDetail(campaign, true)}
-                          >
-                            <Eye size={16} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </>
+                return (
+                  <tr key={campaign.id}>
+                    <td>
+                      <div className="campaign-info">
+                        {campaign.imageUrl && (
+                          <img src={campaign.imageUrl} alt="" className="campaign-thumb" />
+                        )}
+                        <div>
+                          <span className="campaign-name">{campaign.title}</span>
+                          <span className="campaign-user">User: {campaign.userId?.slice(-8) || 'Unknown'}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span className="category-badge">
+                        {CATEGORY_LABELS[campaign.category] || campaign.category}
+                      </span>
+                    </td>
+                    <td>{formatAmount(campaign.targetAmount)}</td>
+                    <td>
+                      <span className={getStatusBadgeClass(campaign.status)}>
+                        {STATUS_LABELS[campaign.status] || campaign.status}
+                      </span>
+                    </td>
+                    <td>{formatDateTime(campaign.createdAt)}</td>
+                    <td>
+                      <div className="action-buttons">
+                        <button
+                          className="btn-view-small"
+                          onClick={() => handleViewDetail(campaign)}
+                          title="Lihat Detail"
+                        >
+                          <Eye size={16} />
+                        </button>
+                        {isPending && (
+                          <>
+                            <button
+                              className="btn-approve-small"
+                              onClick={() => handleApprove(campaign.id)}
+                              disabled={approving}
+                              title="Setujui"
+                            >
+                              <Check size={16} />
+                            </button>
+                            <button
+                              className="btn-reject-small"
+                              onClick={() => handleReject(campaign)}
+                              disabled={rejecting}
+                              title="Tolak"
+                            >
+                              <X size={16} />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         )}
       </div>
 
@@ -358,16 +301,14 @@ const FundingApproval = () => {
               <p>{selectedCampaign.title}</p>
             </div>
 
-            {selectedCampaign.isHistory && (
-              <div className="detail-section">
-                <label>Status:</label>
-                <p>
-                  <span className={`status-badge ${selectedCampaign.status}`}>
-                    {STATUS_LABELS[selectedCampaign.status] || selectedCampaign.status}
-                  </span>
-                </p>
-              </div>
-            )}
+            <div className="detail-section">
+              <label>Status:</label>
+              <p>
+                <span className={getStatusBadgeClass(selectedCampaign.status)}>
+                  {STATUS_LABELS[selectedCampaign.status] || selectedCampaign.status}
+                </span>
+              </p>
+            </div>
 
             <div className="detail-section">
               <label>Kategori:</label>
@@ -380,8 +321,8 @@ const FundingApproval = () => {
             </div>
 
             <div className="detail-section">
-              <label>Batas Waktu:</label>
-              <p>{formatDate(selectedCampaign.endDate)}</p>
+              <label>Terkumpul:</label>
+              <p>{formatAmount(selectedCampaign.currentAmount)}</p>
             </div>
 
             <div className="detail-section">
@@ -389,21 +330,16 @@ const FundingApproval = () => {
               <p className="description-text">{selectedCampaign.description}</p>
             </div>
 
-            <div className="detail-section">
-              <label>Dibuat Pada:</label>
-              <p>{formatDate(selectedCampaign.createdAt)}</p>
-            </div>
-
-            {selectedCampaign.isHistory && selectedCampaign.status === 'rejected' && (
+            {selectedCampaign.status?.toLowerCase() === 'rejected' && selectedCampaign.rejectionReason && (
               <div className="detail-section rejection-section">
                 <label>Alasan Penolakan:</label>
-                <p className="rejection-reason">{selectedCampaign.rejectionReason || '-'}</p>
+                <p className="rejection-reason">{selectedCampaign.rejectionReason}</p>
               </div>
             )}
 
             <div className="modal-actions">
               <button onClick={() => setShowDetailModal(false)} className="btn-cancel">Tutup</button>
-              {!selectedCampaign.isHistory && (
+              {selectedCampaign.status?.toLowerCase() === 'pending_approval' && (
                 <>
                   <button
                     onClick={() => {
@@ -445,240 +381,23 @@ const FundingApproval = () => {
         }
 
         .page-header {
-          margin-bottom: 32px;
+          margin-bottom: 24px;
         }
 
         .page-header h1 {
           font-size: 32px;
           font-weight: 700;
           color: #1e293b;
-          margin-bottom: 8px;
-        }
-
-        .page-subtitle {
-          color: #64748b;
-          font-size: 16px;
-        }
-
-        .campaigns-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-          gap: 24px;
-          margin-bottom: 48px;
-        }
-
-        .campaign-card {
-          background: white;
-          border-radius: 16px;
-          overflow: hidden;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-          transition: all 0.3s;
-        }
-
-        .campaign-card:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-        }
-
-        .campaign-image {
-          position: relative;
-          height: 200px;
-          overflow: hidden;
-        }
-
-        .campaign-image img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-
-        .campaign-badge {
-          position: absolute;
-          top: 16px;
-          right: 16px;
-          background: #fbbf24;
-          color: white;
-          padding: 6px 16px;
-          border-radius: 20px;
-          font-weight: 600;
-          font-size: 13px;
-        }
-
-        .campaign-content {
-          padding: 24px;
-        }
-
-        .campaign-category {
-          display: inline-block;
-          background: #e0e7ff;
-          color: #4f46e5;
-          padding: 4px 12px;
-          border-radius: 12px;
-          font-size: 13px;
-          font-weight: 600;
-          margin-bottom: 12px;
-        }
-
-        .campaign-title {
-          font-size: 20px;
-          font-weight: 700;
-          color: #1e293b;
-          margin-bottom: 16px;
-        }
-
-        .campaign-meta {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-          margin-bottom: 16px;
-        }
-
-        .meta-item {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          color: #64748b;
-          font-size: 14px;
-        }
-
-        .campaign-description {
-          color: #475569;
-          font-size: 14px;
-          line-height: 1.6;
-          margin-bottom: 20px;
-          display: -webkit-box;
-          -webkit-line-clamp: 3;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-
-        .campaign-actions {
-          display: flex;
-          gap: 12px;
-        }
-
-        .btn-view, .btn-approve, .btn-reject {
-          flex: 1;
-          padding: 12px;
-          border: none;
-          border-radius: 8px;
-          font-weight: 600;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          transition: all 0.2s;
-        }
-
-        .btn-view {
-          background: #e2e8f0;
-          color: #475569;
-        }
-
-        .btn-view:hover {
-          background: #cbd5e1;
-        }
-
-        .btn-approve {
-          background: #10b981;
-          color: white;
-        }
-
-        .btn-approve:hover:not(:disabled) {
-          background: #059669;
-        }
-
-        .btn-approve:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-
-        .btn-reject {
-          background: #ef4444;
-          color: white;
-        }
-
-        .btn-reject:hover:not(:disabled) {
-          background: #dc2626;
-        }
-
-        .empty-state {
-          grid-column: 1 / -1;
-          text-align: center;
-          padding: 60px 20px;
-          color: #94a3b8;
-          background: white;
-          border-radius: 16px;
-        }
-
-        .empty-state h3 {
-          margin-top: 16px;
-          color: #64748b;
-        }
-
-        /* History Section */
-        .history-section {
-          background: white;
-          border-radius: 16px;
-          overflow: hidden;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-        }
-
-        .history-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 20px 24px;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          color: white;
-          cursor: pointer;
-        }
-
-        .history-title {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-
-        .history-title h2 {
-          font-size: 20px;
-          font-weight: 700;
-          margin: 0;
-        }
-
-        .history-count {
-          background: rgba(255, 255, 255, 0.2);
-          padding: 4px 12px;
-          border-radius: 20px;
-          font-size: 14px;
-        }
-
-        .toggle-btn {
-          background: rgba(255, 255, 255, 0.2);
-          border: none;
-          color: white;
-          padding: 8px;
-          border-radius: 8px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .toggle-btn:hover {
-          background: rgba(255, 255, 255, 0.3);
         }
 
         .filter-tabs {
           display: flex;
           gap: 12px;
-          padding: 20px 24px;
-          border-bottom: 1px solid #f1f5f9;
+          margin-bottom: 24px;
         }
 
         .tab {
-          padding: 10px 20px;
+          padding: 12px 24px;
           border: none;
           border-radius: 8px;
           background: #f1f5f9;
@@ -687,7 +406,7 @@ const FundingApproval = () => {
           cursor: pointer;
           display: flex;
           align-items: center;
-          gap: 6px;
+          gap: 8px;
           transition: all 0.2s;
           font-size: 14px;
         }
@@ -709,28 +428,36 @@ const FundingApproval = () => {
           background: #ef4444;
         }
 
-        .history-table {
-          overflow-x: auto;
+        .campaigns-table-container {
+          background: white;
+          border-radius: 16px;
+          overflow: hidden;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
         }
 
-        table {
+        .campaigns-table {
           width: 100%;
           border-collapse: collapse;
         }
 
-        th, td {
-          padding: 14px 20px;
+        .campaigns-table th,
+        .campaigns-table td {
+          padding: 16px 20px;
           text-align: left;
           border-bottom: 1px solid #f1f5f9;
         }
 
-        th {
+        .campaigns-table th {
           background: #f8fafc;
           font-weight: 600;
           color: #64748b;
           font-size: 13px;
           text-transform: uppercase;
           letter-spacing: 0.5px;
+        }
+
+        .campaigns-table tbody tr:hover {
+          background: #f8fafc;
         }
 
         .campaign-info {
@@ -740,8 +467,8 @@ const FundingApproval = () => {
         }
 
         .campaign-thumb {
-          width: 40px;
-          height: 40px;
+          width: 48px;
+          height: 48px;
           border-radius: 8px;
           object-fit: cover;
         }
@@ -750,6 +477,7 @@ const FundingApproval = () => {
           display: block;
           font-weight: 600;
           color: #1e293b;
+          margin-bottom: 2px;
         }
 
         .campaign-user {
@@ -761,7 +489,7 @@ const FundingApproval = () => {
           display: inline-block;
           background: #e0e7ff;
           color: #4f46e5;
-          padding: 4px 10px;
+          padding: 4px 12px;
           border-radius: 12px;
           font-size: 12px;
           font-weight: 600;
@@ -769,13 +497,13 @@ const FundingApproval = () => {
 
         .status-badge {
           display: inline-block;
-          padding: 5px 12px;
+          padding: 6px 14px;
           border-radius: 20px;
           font-size: 12px;
           font-weight: 600;
         }
 
-        .status-badge.active, .status-badge.completed {
+        .status-badge.approved {
           background: #d1fae5;
           color: #065f46;
         }
@@ -785,12 +513,22 @@ const FundingApproval = () => {
           color: #991b1b;
         }
 
-        .btn-view-small {
+        .status-badge.pending {
+          background: #fef3c7;
+          color: #92400e;
+        }
+
+        .action-buttons {
+          display: flex;
+          gap: 8px;
+        }
+
+        .btn-view-small,
+        .btn-approve-small,
+        .btn-reject-small {
           padding: 8px;
           border: none;
           border-radius: 8px;
-          background: #e2e8f0;
-          color: #475569;
           cursor: pointer;
           display: flex;
           align-items: center;
@@ -798,14 +536,42 @@ const FundingApproval = () => {
           transition: all 0.2s;
         }
 
+        .btn-view-small {
+          background: #e2e8f0;
+          color: #475569;
+        }
+
         .btn-view-small:hover {
           background: #cbd5e1;
         }
 
-        .empty-history {
+        .btn-approve-small {
+          background: #10b981;
+          color: white;
+        }
+
+        .btn-approve-small:hover:not(:disabled) {
+          background: #059669;
+        }
+
+        .btn-reject-small {
+          background: #ef4444;
+          color: white;
+        }
+
+        .btn-reject-small:hover:not(:disabled) {
+          background: #dc2626;
+        }
+
+        .empty-state {
           text-align: center;
-          padding: 40px;
+          padding: 60px 20px;
           color: #94a3b8;
+        }
+
+        .empty-state h3 {
+          margin-top: 16px;
+          color: #64748b;
         }
 
         /* Modal Styles */
@@ -824,28 +590,106 @@ const FundingApproval = () => {
 
         .modal-content {
           background: white;
-          padding: 32px;
           border-radius: 16px;
+          padding: 24px;
           max-width: 500px;
           width: 90%;
           max-height: 90vh;
           overflow-y: auto;
         }
 
-        .modal-large {
+        .modal-content.modal-large {
           max-width: 700px;
         }
 
         .modal-content h3 {
-          font-size: 24px;
+          font-size: 20px;
           font-weight: 700;
           color: #1e293b;
-          margin-bottom: 16px;
+          margin-bottom: 20px;
+        }
+
+        .reject-reason {
+          width: 100%;
+          padding: 12px;
+          border: 2px solid #e2e8f0;
+          border-radius: 8px;
+          font-size: 14px;
+          resize: vertical;
+          margin-top: 12px;
+        }
+
+        .reject-reason:focus {
+          outline: none;
+          border-color: #667eea;
+        }
+
+        .modal-actions {
+          display: flex;
+          gap: 12px;
+          margin-top: 24px;
+          justify-content: flex-end;
+        }
+
+        .btn-cancel,
+        .btn-submit,
+        .btn-approve,
+        .btn-reject {
+          padding: 12px 24px;
+          border: none;
+          border-radius: 8px;
+          font-weight: 600;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          transition: all 0.2s;
+        }
+
+        .btn-cancel {
+          background: #e2e8f0;
+          color: #475569;
+        }
+
+        .btn-cancel:hover {
+          background: #cbd5e1;
+        }
+
+        .btn-submit {
+          background: #ef4444;
+          color: white;
+        }
+
+        .btn-submit:hover:not(:disabled) {
+          background: #dc2626;
+        }
+
+        .btn-submit:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        .btn-approve {
+          background: #10b981;
+          color: white;
+        }
+
+        .btn-approve:hover:not(:disabled) {
+          background: #059669;
+        }
+
+        .btn-reject {
+          background: #ef4444;
+          color: white;
+        }
+
+        .btn-reject:hover {
+          background: #dc2626;
         }
 
         .detail-image {
           width: 100%;
-          height: 200px;
+          max-height: 200px;
           object-fit: cover;
           border-radius: 12px;
           margin-bottom: 20px;
@@ -856,19 +700,23 @@ const FundingApproval = () => {
         }
 
         .detail-section label {
+          display: block;
+          font-size: 12px;
           font-weight: 600;
           color: #64748b;
-          font-size: 14px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          margin-bottom: 4px;
         }
 
         .detail-section p {
           color: #1e293b;
-          margin-top: 4px;
+          font-size: 15px;
         }
 
         .description-text {
-          white-space: pre-wrap;
           line-height: 1.6;
+          white-space: pre-wrap;
         }
 
         .rejection-section {
@@ -879,58 +727,7 @@ const FundingApproval = () => {
         }
 
         .rejection-reason {
-          color: #991b1b !important;
-          font-style: italic;
-        }
-
-        .reject-reason {
-          width: 100%;
-          padding: 12px;
-          border: 2px solid #e2e8f0;
-          border-radius: 8px;
-          font-size: 14px;
-          margin: 16px 0;
-          resize: vertical;
-        }
-
-        .modal-actions {
-          display: flex;
-          gap: 12px;
-          justify-content: flex-end;
-          margin-top: 20px;
-        }
-
-        .btn-cancel, .btn-submit {
-          padding: 10px 20px;
-          border-radius: 8px;
-          font-weight: 600;
-          cursor: pointer;
-          border: none;
-        }
-
-        .btn-cancel {
-          background: #f1f5f9;
-          color: #475569;
-        }
-
-        .btn-submit {
-          background: #ef4444;
-          color: white;
-        }
-
-        .btn-submit:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-
-        @media (max-width: 768px) {
-          .campaigns-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .filter-tabs {
-            flex-wrap: wrap;
-          }
+          color: #991b1b;
         }
       `}</style>
     </div>
